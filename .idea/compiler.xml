@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile default="true" name="Default" enabled="true">
+        <processor name="com.codename1.rad.annotations.processors.EntityProcessor" />
+        <processorPath>
+          <entry name="$PROJECT_DIR$/coderad-annotation-processor/target/classes" />
+        </processorPath>
+      </profile>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="annotations" />
+        <module name="coderad-common" />
+      </profile>
+      <profile name="Annotation profile for CodeRAD" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$PROJECT_DIR$/coderad-annotation-processor/target/classes" />
+          <entry name="$PROJECT_DIR$/annotations/target/classes" />
+          <entry name="$MAVEN_REPOSITORY$/com/squareup/javapoet/1.13.0/javapoet-1.13.0.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/apache/commons/commons-text/1.9/commons-text-1.9.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/apache/commons/commons-lang3/3.11/commons-lang3-3.11.jar" />
+        </processorPath>
+        <module name="coderad-javascript" />
+        <module name="coderad-ios" />
+        <module name="coderad-tests-javase" />
+        <module name="coderad-android" />
+        <module name="coderad-win" />
+        <module name="coderad-javase" />
+        <module name="coderad-tests-common" />
+        <module name="coderad-annotation-processor" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="annotations" target="1.7" />
+      <module name="codenameone-maven-manual" target="1.8" />
+      <module name="coderad-android" target="1.8" />
+      <module name="coderad-annotation-processor" target="1.8" />
+      <module name="coderad-common" target="1.8" />
+      <module name="coderad-ios" target="1.8" />
+      <module name="coderad-javascript" target="1.8" />
+      <module name="coderad-javase" target="1.8" />
+      <module name="coderad-lib" target="1.8" />
+      <module name="coderad-tests" target="1.8" />
+      <module name="coderad-tests-common" target="1.8" />
+      <module name="coderad-tests-javase" target="1.8" />
+      <module name="coderad-win" target="1.8" />
+    </bytecodeTargetLevel>
+  </component>
+</project>

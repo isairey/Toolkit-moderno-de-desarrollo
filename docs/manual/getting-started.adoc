@@ -1,0 +1,1794 @@
+[#getting-started]
+== Getting Started
+
+TIP: This tutorial is available as a https://youtu.be/QdyO4tpYOHs[video screencast].
+
+To get started, go to https://start.codenameone.com, and select "Code RAD (MVC) Starter Project" from the _Templates_ menu.
+
+image::images/initializr-select-coderad-starter-project.png[]
+
+For the package name, leave it as "com.example.myapp", but change the _Main Class_ to "MyRADApp".
+
+The press the _Download_ button.
+
+After a few seconds you should be prompted to download the project as a ZIP file.  Save this zip file somewhere on your local drive, extract it, then open it in IntelliJ IDEA.
+
+[TIP]
+====
+**Additional Steps for Eclipse Users**
+
+CodeRAD includes an annotation processor that needs to be activated. There are a few additional steps required to enable this in Eclipse.
+
+. Add `org.eclipse.m2e.apt.mode=jdt_apt` to the `./common/.settings/org.eclipse.m2e.apt.prefs`
+. Add `target/generated-sources/rad-views` to the .classpath.
+
+See https://github.com/codenameone/CodenameOne/issues/3724[this issue] for more details.
+====
+
+Once the project is opened, press the
+image:images/intellij-run-button.png[]
+ icon on the toolbar to run the project in the Codename One simulator.
+
+NOTE: The first time you run and build the project it will take some time because it needs to download all of the project dependencies.  Subsequent builds should only take a few seconds.
+
+.The starter project running inside the Codename One simulator
+
+image::images/starter-project-run.png[]
+
+
+[#under-the-hood]
+=== Under the Hood
+
+TIP: Watch the companion https://youtu.be/QdyO4tpYOHs?t=191[screencast] for this section.
+
+Let's take look under the hood to see how this "Hello World" app is producted.
+
+The _starting point_ for your app is the `com.example.myapp.MyRADApp` class, located in the _common/src/main/java_ directory.
+
+image::images/hello-world-main-class-project-inspector.png[]
+
+The contents are shown below:
+
+[source,java]
+----
+package com.example.myapp;
+
+/*.. imports omitted ...*/
+
+public class MyRADApp extends ApplicationController {
+
+    public void actionPerformed(ControllerEvent evt) {
+        with(evt, StartEvent.class, startEvent -> {
+            startEvent.setShowingForm(true);
+            new StartPageController(this).show();
+        });
+        super.actionPerformed(evt);
+    }
+}
+----
+
+This class overrides https://www.javadoc.io/doc/com.codenameone/coderad-common/latest/com/codename1/rad/controllers/ApplicationController.html[ApplicationController], and listens for the _StartEvent_, which is fired when the app starts, or is brought to the foreground.
+
+The effective action performed by the event handler is the line:
+
+[source,java]
+----
+new StartPageController(this).show();
+----
+
+This creates a new _StartPageController_ and shows it.
+
+The _StartPagePageController_ class is a https://www.javadoc.io/doc/com.codenameone/coderad-common/latest/com/codename1/rad/controllers/FormController.html[FormController] subclass that is generated from the _StartPage_ view at compile-time by the CodeRAD annotation processor.
+
+The _StartPage_ view is implemented as a RAD View using XML.  It is located inside the _common/src/main/rad/views_ directory.
+
+image::images/starter-app-rad-views-hierarchy.png[]
+
+The contents are shown below:
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<y style.bgColor="0xffffff" style.bgTransparency="0xff" safeArea="true" scrollableY="true" style.paddingLeft="5vw" style.paddingRight="5vw" style.paddingTop="5vw" style.paddingBottom="5vw"
+   xsi:noNamespaceSchemaLocation="StartPage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <title hidden="true"/>
+
+    <center style.marginBottom="2rem">
+        <label icon="https://www.codenameone.com/wp-content/uploads/2020/08/footer-logo.png height:24vh; aspect:1.5; scale:fit"/>
+    </center>
+
+
+    <spanLabel textUIID="StartPageText" style.marginBottom="1rem">This is the CodeRAD2 starter template for building native mobile apps in Java and Kotlin</spanLabel>
+
+    <spanLabel textUIID="StartPageText">CodeRAD is an MVC framework for Codename One that will help to build better, more maintainable apps in less time.</spanLabel>
+
+    <button rad-href="https://shannah.github.io/CodeRAD/manual _blank">Learn more</button>
+
+    <label uiid="StartPageH2">Source Code Overview</label>
+
+    <spanLabel textUIID="StartPageText">This template is barebones, consisting of one view, one controller, and a stylesheet.</spanLabel>
+
+
+    <button uiid="StartPageLink"
+            materialIcon="FontImage.MATERIAL_ARROW_RIGHT"
+            textPosition="Component.LEFT"
+            rad-href="https://github.com/shannah/coderad2-starter-template/blob/master/common/src/main/rad/views/com/example/myapp/StartPage.xml _blank">See "View" source</button>
+    <button uiid="StartPageLink"
+            materialIcon="FontImage.MATERIAL_ARROW_RIGHT"
+            textPosition="Component.LEFT"
+            rad-href="https://github.com/shannah/coderad2-starter-template/blob/master/common/src/main/java/com/example/myapp/MyRADApp.java _blank">See "Controller" source</button>
+    <button uiid="StartPageLink"
+            materialIcon="FontImage.MATERIAL_ARROW_RIGHT"
+            textPosition="Component.LEFT"
+            rad-href="https://github.com/shannah/coderad2-starter-template/blob/master/common/src/main/css/theme.css _blank">See Stylesheet source</button>
+</y>
+----
+
+TIP: The boilerplate attributes `xsi:noNamespaceSchemaLocation="StartPage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"` are injected automatically by the annotation processor.  You can leave those out when you create your own views.
+
+For this tutorial, I want to start from scratch, so let's delete all of the contents from _StartPage.xml_, and replace it with the following:
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<y xsi:noNamespaceSchemaLocation="StartPage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <title>Hi World</title>
+    <label>Hello World</label>
+</y>
+----
+
+Upon restarting the app in simulator, it should now look like:
+
+image::images/hello-world-in-simulator.png[]
+
+Let's go through this code line by line.
+
+`<?xml version="1.0"?>`::
+Obligatory XML boilerplate.
+`<y>`::
+A Container with `BoxLayout.Y` layout.  (i.e. a container that lays out its children vertically).
+`<title>Hi World</title>`::
+Not a child component, rather a "bean" that sets the title of the form to "Hi World"
+`<label>Hello World</label>`::
+A Label component with the text "Hello World"
+
+[#hot-reload]
+=== Hot Reload
+
+TIP: Watch the companion https://youtu.be/QdyO4tpYOHs?t=471[screencast] for this section.
+
+The Codename One simulator supports a "Hot Reload" feature that can dramatically improve productivity.  Especially if you're like me, and you like to experiment with the UI by trial and error.
+
+Hot Reload is disabled by default, but you can enable it using the _Tools_ > _Hot Reload_ menu.
+
+image::images/enable-hot-reload.png[]
+
+If the _Reload Simulator_ option is checked, then the simulator will monitor the project source files for changes, and automatically recompile and reload the simulator as needed.
+
+The _Reload Current Form_ option is the same as the _Reload Simulator_ option except that it will automatically load the current form when the simulator reloads.  When using this option, you will lose the navigation context (e.g. the _parent_ controller will be the _ApplicationController_) and data, when the simulator reloads.
+
+TIP: Technically these _hot reload_ options aren't a "hot" reload, since it actually restarts the simulator - and you will lose your place in the app.  True hot reload (where the classes are reloaded transparently without having to restart the simulator) is also available, but it is experimental and requires some additional setup.
+
+**The remainder of this tutorial will assume that you have _Hot Reload_ enabled**
+
+=== Changing the Styles
+
+TIP: Watch the companion https://youtu.be/QdyO4tpYOHs?t=598[screencast] for this section.
+
+Keep the simulator running, and open the CSS style stylesheet for the project, located at _common/src/main/css/theme.css_.
+
+image::images/theme-css-project-inspector.png[]
+
+Add the following snippet to the _theme.css_ file:
+
+[source,css]
+----
+Label {
+  color: blue;
+}
+----
+
+NOTE: There will be some existing CSS rules in there from the default template.  You can remove all of these rules except for the `#Constants{...}` section, as it is required to load the native theme.
+
+Within a second or two after you save the file, you should notice that the "Hello World" label in the simulator has turned blue.
+
+image::images/hello-world-blue.png[]
+
+This is because the https://www.codenameone.com/javadoc/com/codename1/ui/Label.html[Label] component's default UIID is "Label", so it adopts styles defined for the selector "Label" in the stylesheet.
+
+[TIP]
+====
+If you are unsure of the UIID of a particular component, you can use the component inspector in the simulator to find out. Select _Tools_ > _Component Inspector_
+
+image::images/component-inspector-menu.png[]
+
+In the _Component Inspector_, you can expand the component tree in the left panel until you reach the component you're looking for.  The details of that component will then be shown in the right panel.
+
+image::images/component-inspector-label-details.png[]
+
+The _UIID_ field will show you the UIID of the component that you can use to target the component from the stylesheet.
+
+====
+
+The above stylesheet change will change the color of _all_ labels to _blue_.  What if we want to change only the color of _this_ label without affecting the other labels in the app?  There are two ways to do this.  The first way is to override the _fgColor_ style inline on the `<label>` tag itself.
+
+==== Inline Styles
+
+In the _StartPage.xml_ file, add the `style.fgColor` attribute to the `<label>` tag with the value "0xff0000".
+
+.In IntelliJ's XML editor, you'll receive type hints for all tags and attributes as shown here.
+image::images/xml-attribute-style-fgColor-typehints.png[]
+
+Notice that, as soon as you start typing inside the `<label>` tag, the editor presents a drop-down list of options for completion.  This is made possible by the schema (StartPage.xsd located in the same directory as your StartPage.xml file) that the CodeRAD annotation processor automatically generates for you.  This schema doesn't include _all_ of the possible attributes you can use, but it does include most of the common ones.
+
+After making the change, your _StartPage.xml_ file should look like:
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<y xsi:noNamespaceSchemaLocation="StartPage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <title>Hi World</title>
+    <label style.fgColor="0xff0000">Hello World</label>
+</y>
+----
+
+And, within a couple of seconds, the simulator should have automatically reloaded your form - this time with "Hello World" in _red_ as shown below.
+
+image::images/simulator-hello-world-red.png[]
+
+If it doesn't automatically reload your form, double check that you have _Hot Reload_ enabled (See the _Tools_ > _Hot Reload_ menu).  If _Hot Reload_ is enabled and it still hasn't updated your form, check the console output for errors.  It is likely that your project failed to recompile; probably due to a syntax error in your _StartPage.xml_ file.
+
+.XML Tag Attributes
+****
+In the above example, we added the `style.fgColor` attribute to the `<label>` tag to set its color.  This attribute corresponds to the following Java snippet on the label:
+
+[source,java]
+----
+theLabel.getStyle().setFgColor(0xff0000);
+----
+
+In a similar way, you can set any property via attributes that can be accessed via a chain of "getters" from the label, as long as the end of the chain has an appropriate "setter".  The _Label_ class includes a "setter" method `setPreferredH(int height)`.  You could set this via the `preferredH` property e.g.:
+
+[source,xml]
+----
+<label preferredH="100"/>
+----
+
+would correspond to the Java:
+
+[source,java]
+----
+theLabel.setPreferredH(100)
+----
+
+In the `style.fgColor` example, the `style` portion corresponded to the `getStyle()` method, and the `fgColor` component corresponded to the `setFgColor()` method of the `Style` class.  The `Label` class also has a `getDisabledStyle()` method that returns the style that is to be used when the label is in "Disabled" state.  This isn't as relevant for `Label` as it would be for active components like `Button` and `TextField`, but we could set it using attributes.  E.g.
+
+[source,xml]
+----
+<label disabledStyle.fgColor="0xff0000">Hello World</label>
+----
+
+or All styles (which sets the style for all of the component states at once):
+
+[source, xml]
+----
+<label allStyles.fgColor="0xff0000">Hello World</label>
+----
+
+This sidebar is meant to give you an idea of the attributes that are available to you in this XML language, however, we haven't yet discussed the vocabulary that is available to you for the attribute values.  So far the examples have been limited to _literal_ values (e.g. `0xff0000`), but this is just for simplicity.  Attributes values can be any valid Java expression in the context.  See the section on "Attribute Values" for a more in-depth discussion on this, as there are a few features and wrinkles to be aware of.
+
+****
+
+==== Custom UIIDs
+
+The second (preferred) way to override the style of a particular Label without affecting other labels in the app is to create a custom UIID for the label.
+
+Start by changing the `Label` style in your stylesheet to `CustomLabel` as follows:
+
+[source,css]
+----
+CustomLabel {
+  cn1-derive: Label;  <1>
+  color: blue;
+}
+----
+<1> The `cn1-derive` directive indicates that our style should "inherit" all of the styles from the "Label" style.
+
+Now return to the _StartPage.xml_ file and add `uiid="CustomLabel"` to the `<label>` tag.  While we're at it, remove the inline `style.fgColor` attribute:
+
+[source,xml]
+----
+<label uiid="CustomLabel">Hello World</label>
+----
+
+Finally, to verify that our style only affects this single label, let's add another label to our form without the `uiid` attribute.  When all of these changes are made, the _StartPage.xml_ content should look like:
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<y xsi:noNamespaceSchemaLocation="StartPage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <title>Hi World</title>
+    <label uiid="CustomLabel">Hello World</label>
+    <label>A regular label</label>
+</y>
+----
+
+After saving both _theme.css_ and _StartPage.xml_, the simulator should automatically reload, and you'll see something like the following:
+
+image::images/simulator-hello-world-custom-uiid.png[]
+
+=== Adding More Components
+
+TIP: Watch the companion https://youtu.be/QdyO4tpYOHs?t=1118[screencast] for this section.
+
+
+So far we've only used the `<label>` tag, which corresponds to the `Label` component.  You are not limited to `<label>`, nor are you limited to any particular subset of "supported" components.  You can use _any_ Component in your XML files that you could use with Java or Kotlin directly.  You can even use your own custom components.
+
+The tag name will be the same as the simple class name of the component you want to use.  By convention, the tag names begin with a lowercase letter.  E.g. The _TextField_ class would correspond to the `<textField>` tag.
+
+.XML Tag Namespaces
+****
+Since XML tags use only the _simple_ name for its corresponding Java class, you may be wondering how we deal with name collisions. For example, what if you have defined your own component class _com.xyz.widgets.TextField_.  Then how would you differentiate this class from the _com.codename1.ui.TextField_ class in XML.  Which one would `<textField>` create?
+
+The mechanism of differentiation here is the same as in Java.  Each XML file includes a set of _import_ directives which specify the package namespaces that it will search to find components corresponding with an XML tag.  It small selection of packages are imported "implicitly", such as _com.codename1.ui_, _com.codename1.components_, _com.codename1.rad.ui.propertyviews_, and a few more.  If you want to import _additional_ packages or classes, you can use the `<import>` tag, and include regular Java-style import statements as its contents.
+
+E.g.
+
+[source,xml]
+----
+<?xml version="1.0" ?>
+<y>
+  <import>
+  import com.xyz.widgets.TextField;
+  </import>
+
+  <!-- This would create an instance of com.xyz.widgets.TextField
+       and not com.codename1.ui.TextField -->
+  <textField/>
+</y>
+----
+
+*You can include any valid Java import statement inside the `<import>` tag.*
+
+E.g. the following mix of package and class imports is also fine:
+
+[source,xml]
+----
+<import>
+import com.xyz.widgets.TextField;
+import com.xyz.otherwidgets.*;
+</import>
+----
+****
+
+For fun, let's try adding a few of the core Codename One components to our form to spice it up a bit.
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<y scrollableY="true" xsi:noNamespaceSchemaLocation="StartPage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <title>Hi World</title>
+    <label uiid="CustomLabel">Hello World</label>
+    <label>A regular label</label>
+
+    <!-- A text field with a hint -->
+    <textField hint="Enter some text"></textField>
+
+    <!-- A text field default text already inserted -->
+    <textField>Some default text</textField>
+
+    <!-- A password field -->
+    <textArea constraint="TextArea.PASSWORD"/>
+
+    <!-- Multiline text -->
+    <spanLabel>Write Once, Run Anywhere.
+        Truly native cross-platform app development with Java or Kotlin for iOS, Android, Desktop &amp; Web.
+    </spanLabel>
+
+    <!-- A Calendar -->
+    <calendar/>
+
+    <checkBox>A checkbox</checkBox>
+
+    <radioButton>A Radio Button</radioButton>
+
+    <button>Click Me</button>
+
+    <spanButton>Click
+    Me</spanButton>
+
+    <multiButton textLine1="Click Me"
+        textLine2="A description"
+                 textLine3="A subdesc"
+                 textLine4="Line 4"
+    />
+
+
+
+</y>
+----
+
+After changing the contents of your _StartPage.xml_ file to the above, and saving it, you should see the following result in the simulator:
+
+image::images/simulator-fun-with-components.png[]
+
+[#adding-actions]
+=== Adding Actions
+
+TIP: Watch the companion https://youtu.be/QdyO4tpYOHs?t=1586[screencast] for this section.
+
+
+CodeRAD is built around the Model-View-Controller (MVC) philosophy which asserts that the _View_ logic (i.e. how the app looks) should be separated from the _Controller_ logic (i.e. what the app does with user input).  _Actions_ form the cornerstone of how CodeRAD keeps these concerns separate.  They provide a sort of communication channel between the controller and the view, kind of like a set of Walkie-talkies.
+
+To go with the Walkie-talkie metaphor for a bit, A View will broadcast on a few frequencies that are predefined by the View.  It might broadcast on 96.9MHz when the "Help" button is pressed, and 92.3MHz when text is entered into its _username_ text field.
+
+Before displaying a View, the Controller will prepare a set of one-way Walkie-talkies at a particular frequency.  It passes one of the handset's to the view - the one that _sends_.  It retains the other handset for itself - the one that receives.
+
+When the view is instantiated, it will look through all of the walkie-talkie handsets that were provided and see if any are set to a frequency that it wants to broadcast on.  If it finds a match, it will use it to broadcast relevant events.  To continue with the example, if finds a handset that is tuned to 96.9MHz, it will send a message to this handset whenever the "Help" button is pressed.
+
+When the controller receives the message in the corresponding hand-set of this walkie-talkie, it can respond by performing some action.
+
+The view can also use the set of Walkie-talkies that it receives to affect how it renders itself.  For example, if, when it is instantiated, it doesn't find any handsets tuned to 96.9MHz, it may "choose" just to not render the "Help" button at all, since nobody is listening.
+
+Additionally, the Controller might attach some additional instructions to the handset that it provides to the view.  The view can then use these instructions to customize how it renders itself, or how to use the handset.  For example, the handset might come with a note attached that says "Please use _this_ icon if you attach the handset to a button", or "Please use _this_ text for the label", or "Please disable the button under this condition".
+
+In the above metaphor, the _frequency_ represents an instance of the `ActionNode.Category` class, and the walkie-talkies represent an instance of the `ActionNode` class.  The _View_ declares which _Categories_ it supports, how it will interpret them.  The _Controller_ defines _Actions_ and registers them with the view in the prescribed categories.  When the _View_ is instantiated, it looks for these actions, and will use them to affect how it renders itself.  Typically actions are manifested in the View as a button or menu item, but not necessarily.  `EntityListView`, for example, supports the `LIST_REFRESH_ACTION` and `LIST_LOAD_MORE_ACTION` categories which will broadcast events when the list model should be refreshed, or when more entries should be loaded at the end of the list.  They don't manifest in any particular button or menu.
+
+==== Adding our first action
+
+Let's begin by restoring the _StartPage.xml_ template to its initial state:
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<y scrollableY="true" xsi:noNamespaceSchemaLocation="StartPage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <title>Hi World</title>
+    <label>Hello World</label>
+</y>
+----
+
+Now, let's define an action category using the `<define-category>` tag.
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<y scrollableY="true" xsi:noNamespaceSchemaLocation="StartPage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <define-category name="HELLO_CLICKED" />
+    <title>Hi World</title>
+    <label>Hello World</label>
+</y>
+----
+
+And then change the `<label>` to a `<button>`, and "bind" the button to the "HELLO_CLICKED" category using the `<bind-action>` tag:
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<y scrollableY="true" xsi:noNamespaceSchemaLocation="StartPage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <define-category name="HELLO_CLICKED" /> <1>
+    <title>Hi World</title>
+    <button>Hello World
+        <bind-action category="HELLO_CLICKED"/>
+    </button>
+
+</y>
+----
+<1> The `define-category` tag will define an `ActionNode.Category` in the resulting Java View class with the given name.
+
+When the simulator reloads after this last change you will notice that the "Hello World" button is not displayed.  You do not need to adjust your lenses.  This is _expected_ behaviour.  Since the button is bound to the "HELLO_CLICKED" category, and the controller hasn't supplied any actions in this category, the button will not be rendered.
+
+Let's now define an action in the Controller with this category.  Open the _com.example.myapp.MyRadApp_ class and add the following method:
+
+[source,java]
+----
+@Override
+protected void initControllerActions() {
+    super.initControllerActions();
+    addAction(StartPage.HELLO_CLICKED, evt-> {
+        evt.consume();
+        Dialog.show("Hello", "You clicked me", "OK", null);
+    });
+}
+----
+
+The `initControllerActions()` method is where all actions should be defined in a controller.  This method is guaranteed to be executed before views are instantiated.    The `addAction()` method comes in multiple flavours, the simplest of which is demonstrated here.  The first parameter takes the `HELLO_CLICKED` action category that we defined in our view, and it registered an `ActionListener` to be called when that action is fired.
+
+Calling `evt.consume()` is good practice as it signals to other interested parties that the event has been handled.  This will prevent it from propagating any further to any other listeners to the `HELLO_CLICKED` action.
+
+The `Dialog.show()` method shows a dialog on the screen.
+
+If you save this change, you should see the simulator reload with the "Hello World" button now rendered as shown below:
+
+image::images/hello-world-with-button.png[]
+
+And if you click on the button, it will display a dialog as shown here:
+
+image::images/dialog-show-you-clicked-me.png[]
+
+==== Customizing Action Rendering
+
+In the previous example, the controller didn't make any recommendations to the view over how it wanted its _HELLO_CLICKED_ action to be rendered.  It simply registered an `ActionListener` and waited to be notified when it is "triggered".   Let's go a step further now, and specify an icon and label to use for the action.  We will use the `ActionNode.Builder` class to build an action with the icon and label that we desire, and add it to the controller using the `addToController()` method of `ActionNode.Builder`.
+
+Change your `initControllerActions()` method to the following and see how the action's button changes in the simulator:
+
+[source,java]
+----
+@Override
+protected void initControllerActions() {
+    super.initControllerActions();
+    ActionNode.builder().
+        icon(FontImage.MATERIAL_ALARM).
+        label("Click Now").
+        badge("2").
+        addToController(this, StartPage.HELLO_CLICKED, evt -> {
+            evt.consume();
+            Dialog.show("Hello", "You clicked me", "OK", null);
+        });
+}
+----
+image::images/action-overridden-in-controller.png[]
+
+There's quite a bit more that you can do with actions, but this small bit of foundation will suffice for our purposes for now.
+
+=== Creating Menus
+
+TIP: Watch the companion https://youtu.be/QdyO4tpYOHs?t=1983[screencast] for this section.
+
+
+Whereas the `<button>` tag will create a single button, which can be optionally "bound" to a single action, the `<buttons>` renders multiple buttons to the view according to the actions that it finds in a given category.  Let's change the example from the previous section display a menu of buttons.  We will:
+
+1. Define a new category called `MAIN_MENU`.
+2. Add a `<buttons>` component to our view with `actionCategory="MAIN_MENU"`.
+3. Define some actions in the controller, and register them with the new `MAIN_MENU` category.
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<y scrollableY="true" xsi:noNamespaceSchemaLocation="StartPage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <define-category name="HELLO_CLICKED"/>
+
+    <define-category name="MAIN_MENU" />
+    <title>Hi World</title>
+    <button text="Hello World">
+        <bind-action category="HELLO_CLICKED"/>
+    </button>
+    <buttons actionCategory="MAIN_MENU"/>
+
+</y>
+----
+
+And add the following to the `initControllerActions()` method of your controller class:
+
+[source,java]
+----
+ActionNode.builder().
+        icon(FontImage.MATERIAL_ALARM).
+        label("Notifications").
+        addToController(this, StartPage.MAIN_MENU, evt -> {
+            System.out.println("Notifications was clicked");
+        });
+
+ActionNode.builder().
+        icon(FontImage.MATERIAL_PLAYLIST_PLAY).
+        label("Playlist").
+        addToController(this, StartPage.MAIN_MENU, evt -> {
+            System.out.println("Playlist was clicked");
+        });
+
+ActionNode.builder().
+        icon(FontImage.MATERIAL_CONTENT_COPY).
+        label("Copy").
+        addToController(this, StartPage.MAIN_MENU, evt -> {
+            System.out.println("Copy was clicked");
+        });
+
+----
+
+If all goes well, the simulator should reload to resemble the following screenshot:
+
+image::images/buttons-tag.png[]
+
+==== Buttons Layout
+
+The `<buttons>` tag laid out all of the buttons in its specific action category.  Currently they are all laid out on a single line.  The default layout manager for the "Buttons" component is `FlowLayout`, which means that it will lay out actions horizontally from left to right (or right to left for RTL locales), and wrap to the next line when it runs out of space.  It gives you quite a bit of flexibility for how the buttons are arranged and rendered, though.  You can set the layout of `Buttons` to any layout manager that doesn't require a layout constraint.  E.g. _BoxLayout_, _GridLayout_, and _FlowLayout_.
+
+E.g. We can change the layout to _BoxLayout.Y_ by setting the `layout=BoxLayout.y()` attribute:
+
+[source,xml]
+----
+<buttons layout="BoxLayout.y()" actionCategory="MAIN_MENU"/>
+----
+
+image::images/buttons-boxlayout-y.png[]
+
+Or GridLayout using `layout="new GridLayout(2)"`:
+
+
+[source,xml]
+----
+<buttons layout="new GridLayout(2,2)" actionCategory="MAIN_MENU"/>
+----
+
+image::images/grid-layout-buttons.png[]
+
+==== Action Styles
+
+Actions may include many preferences about how they should be rendered.  The view is not obligated to abide by these preferences, but it usually at least considers them.  We've already seen how actions can specify their preferred icons, labels, and badges, but there are several other properties available as well.  One simple, but useful property is the _action style_ which indicates whether the action should be rendered with both its icon and text, only its icon, or only its text.  This is often overridden by the view based on the context.  E.g. The view may include a menu of actions, and it only wants to display the action icons.
+
+The `<buttons>` tag has an action template that defines "fallback" properties for its actions.  These can be set using the `actionTemplate.*` attributes.  For example, try adding the `actionTemplate.actionStyle` attribute to your `<buttons>` tag.  You should notice that the editor gives you a drop-down list of options for the value of this attribute as shown below:
+
+image::images/action-style-dropdown.png[]
+
+Try selecting different values for this attribute and save the file after each change to see the result in the simulator.  You should see something similar to the following:
+
+.IconBottom
+image::images/action-style-icon-bottom.png[]
+
+.IconTop
+image::images/action-style-icon-top.png[]
+
+.IconLeft
+image::images/action-style-icon-left.png[]
+
+.IconRight
+image::images/action-style-icon-right.png[]
+
+.IconOnly
+image::images/action-style-icon-only.png[]
+
+You can also specify UIIDs for the actions to customize things like font, color, borders, padding, etc...  To learn more about the various options available, see the Actions chapter of the manual.  (TODO: Create actions section of manual).
+
+==== Overflow Menus
+
+In some cases, your view may only have room for one or two buttons in the space provided, but you want to be able to support more actions than that.  You can use the _limit_ attribute to specify the maximum number of buttons to render.  If the number of actions in the action category is greater than this limit, it will automatically add an overflow menu for the remainder of the actions.
+
+Try adding `limit=1` to the `<buttons>` tag and see what happens:
+
+[source,xml]
+----
+<buttons
+        layout="new GridLayout(2,2)"
+        actionCategory="MAIN_MENU"
+        actionTemplate.actionStyle="IconOnly"
+        limit="1"
+/>
+----
+
+When the simulator reloads you will see only a "More" button where the menu items once were:
+
+image::images/buttons-more-button.png[]
+
+If you press this button, you will be presented with an Action Sheet with the actions.
+
+image::images/buttons-action-sheet.png[]
+
+If you change the limit to "2", it will show the first action, _Notifications_, in the buttons, and then it will show the remaining two actions when the user presses the "More" button.
+
+image::images/buttons-limit-2.png[]
+
+[#form-navigation]
+=== Form Navigation
+
+TIP: Watch the companion https://youtu.be/QdyO4tpYOHs?t=2392[screencast] for this section.
+
+
+It's time to grow beyond our single-form playpen, and step into the world of multi-form apps.  Let's create another view in the same folder as _StartPage.xml_.  We'll name this _AboutPage.xml_.  If you're using IntelliJ, like me, you can create this file by right clicking the "myapp" directory in the project inspector, and select _New_ > _File_ as shown here:
+
+image::images/intellij-new-view-xml-file.png[]
+
+Then enter "AboutPage.xml" in the dialog:
+
+image::images/about-page-xml-new-file-prompt.png[]
+
+And press _Enter_
+
+Add the following placeholder contents to the newly created _AboutPage.xml_ file:
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<y>
+    <title>About Us</title>
+    <label>Under construction</label>
+</y>
+----
+
+Finally, let's add a button to our original view, _StartPage.xml_ as follows:
+
+[source,xml]
+----
+<button rad-href="#AboutPage">About Us</button>
+----
+
+When the simulator reloads, you should now see this button:
+
+image::images/start-page-about-us-button.png[]
+
+Click on this button, and it should take you to the "About Us" view we just created.
+
+image::images/about-us-page.png[]
+
+Notice that the _About Us_ form includes a _Back_ button that returns you to the _Start Page_.  This is just one of the nice features that you get for free by using CodeRAD.  There is a lot of power packed into the `rad-href` attribute. In this case we specified that we wanted to link to the _AboutPage_ view using the "#AboutPage" URL, it enables other URL types as well.  To learn more about the _rad-href_ attribute, see (TODO section of manual on rad-href).
+
+TIP: This section described only how to navigate to a different form.  It is also possible to load views within the current form using the `rad-href` attribute.  This is commonly used on tablet and desktop to create a _master-detail_ view.  See <<intraform-navigation>> for some examples.
+
+=== Models
+
+TIP: Watch the companion https://youtu.be/QdyO4tpYOHs?t=2650[screencast] for this section.
+
+
+So far we've been working only with the _V_ and _C_ portions of _MVC_.  In this section, I introduce the final pillar in the trinity: _the Model_.  Model objects store the data of the application.  In CodeRAD, _model_ objects implement the _com.codename1.rad.models.Entity_ interface.  We're going to skip the conceptual discussion of _Models_ in this tutorial, and dive directly into an example so you can see how they work.  After we've played with some models, we'll circle back and discuss the theories and concepts in greater depth.
+
+Most apps need a model to encapsulate the currently logged-in user.  Let's create model named _UserProfile_ for this purpose.
+
+Create a new package named "com.example.myapp.models".  In IntelliJ, you can achieve this by right clicking on the _com.example.myapp_ node in the project inspector (inside the _src/main/java_ directory of the _common_ module), and select _New_ > _Package_, as shown here:
+
+image::images/intellij-new-package.png[]
+
+Then enter "models" for the package name in the dialog:
+
+image::images/intellij-new-package-models.png[]
+
+Now create a new Java interface inside this package named "UserProfile".
+
+
+[source,java]
+----
+package com.example.myapp.models;
+
+import com.codename1.rad.annotations.RAD;
+import com.codename1.rad.models.Entity;
+import com.codename1.rad.models.Tag;
+import com.codename1.rad.schemas.Person;
+
+@RAD <1>
+public interface UserProfile extends Entity {
+
+    /*
+     * Declare the tags that we will use in our model. <2>
+     */
+    public static final Tag name = Person.name;
+    public static final Tag photoUrl = Person.thumbnailUrl;
+    public static final Tag email = Person.email;
+
+    @RAD(tag="name") <3>
+    String getName();
+    void setName(String name);
+
+    @RAD(tag="photoUrl")
+    String getPhotoUrl();
+    void setPhotoUrl(String url);
+
+    @RAD(tag="email")
+    String getEmail();
+    void setEmail(String email);
+}
+----
+<1> The `@RAD` annotation before the interface definition activates the CodeRAD annotation processor, which will generate a concrete implementation of this interface (named _UserProfileImpl) and a _wrapper_ class this interface (named _UserProfileWrapper_).  More _wrapper classes_ shortly.
+<2> We declare and import the tags that we intend to use in our model.  Tags enable us to create views that are loosely coupled to a model.  Since our _UserProfile_ represents a person, we will tag many of the properties with tags from the _Person_ schema.
+<3> The `@RAD` annotation before the `getName()` method directs the annotation processor to generate a _property_ named "name".  The `tag="name"` attribute means that this property will accessible via the _name_ tag. This references the `public static final Tag name` field that we defined at the beginning of the interface definition.  More on tags shortly.
+
+Next, let's create a view that allows us to view and edit a _UserProfile_.
+
+In the same directory as the _StartPage.xml_ file, create a new file named _UserProfilePage.xml_ with the following contents:
+
+[source,xml]
+----
+<?xml version="1.0" ?>
+
+<y rad-model="UserProfile" xsi:noNamespaceSchemaLocation="UserProfilePage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <import>
+        import com.example.myapp.models.UserProfile;
+    </import>
+    <title>My Profile</title>
+    <label>Name:</label>
+    <radLabel tag="Person.name"/>
+    <label>Email:</label>
+    <radLabel tag="Person.email" />
+</y>
+----
+
+This view looks very similar to the _StartPage_ and _AboutPage_ views we created before, but it introduces a couple of new elements:
+
+`rad-model="UserProfile"`::
+This attribute, added to the root element of the XML document specifies that this view's _model_ will a _UserProfile_.
++
+IMPORTANT: Remember to import `UserProfile` class in the `<import>` tag, or the view will fail to compile because it won't know where to find the _UserProfile_ class.
+
+`<radLabel tag="Person.name"/>`::
+The `<radLabel>` tag is a wrapper around a `Label` that supports binding to a model property.  In this case the `tag=Person.name` attribute indicates that this label should be bound to the property of the model with the `Person.name` tag.  Recall that the _name_ property of the _UserProfile_ included the `@RAD(tag="name")` annotation, which effectively "tagged" the property with the "name" tag.
++
+TIP: In this example I chose to reference the `Person.name` tag from the _Person_ schema, but since our _UserProfile_ class referenced this tag in its `name` static field, we could have equivalently referenced `tag="UserProfile.name"` here.
+
+Before we fire up the simulator, we also need to add a _link_ to our new form so we can test it out.  Add a button to the _StartPage_ view that links to our _UserProfilePage_:
+
+[source,xml]
+----
+<button rad-href="#UserProfilePage">User Profile</button>
+----
+
+Now fire up the simulator and click on the _User Profile_ button we added.  YOu should see something like the this:
+
+image::images/user-profile-page.png[]
+
+This is a little boring right now because we haven't specified a _UserProfile_ object to use as the model for this view, so it just creates a new (empty) instance of _UserProfile_ and uses that.  Let's remedy that by instantiating a _UserProfile_ in our controller, and then use _that_ profile as the view for our profile.
+
+Open the RADApp class and implement the following method:
+
+[source,java]
+----
+@Override
+protected void onStartController() {
+    super.onStartController();
+
+    UserProfile profile = new UserProfileImpl();
+    profile.setName("Jerry");
+    profile.setEmail("jerry@example.com");
+    addLookup(UserProfile.class, profile);
+}
+----
+
+TIP: The `onStartController()` method is the preferred place to add initialization code for your controller.  Placing initialization here rather than in the constructor ensures the controller is "ready" to be initailized.
+
+Most of this snippet should be straight forward.  I'll comment on two aspects here:
+
+1. We use the `UserProfileImpl` class, which is the default concrete implementation of our _UserProfile_ entity that was generated for us by the annotation processor.
+2. The `addLookup()` method adds a _lookup_ to our controller so that the profile we just created can be accessed throughout the app by calling the `Controller.lookup()` method, passing it `UserProfile.class` as a parameter.  Lookups are used throughout CodeRAD as they are a powerful way to "share" objects between different parts of your app while still being loosely coupled.
+
+Now, we will make a couple of changes to the _StartPage_ view to inject this profile into the _UserProfile_ view.
+
+First, we need to add _UserProfile_ to the _imports_ of _StartPage_.
+
+[source,xml]
+----
+<import>
+import com.example.myapp.models.UserProfile;
+</import>
+----
+
+Next, add the following tag somewhere in the root of the _StartPage.xml_ file:
+
+[source,xml]
+----
+<var name="profile" lookup="UserProfile"/>
+----
+
+This declares a "variable" named _profile_ in our view with the value of the _UserProfile_ lookup.  This is roughly equivalent to the java:
+
+[source,java]
+----
+UserProfile profile = controller.lookup(UserProfile.class);
+----
+
+
+Finally, change the `<button>` tag in the _StartPage_ that we used to link to the _UserProfile_ page to indicate that it should use the _profile_ as the model for the _UserProfilePage_:
+
+[source,xml]
+----
+<button rad-href="#UserProfilePage{profile}">User Profile</button>
+----
+
+The active ingredient we added here was the "{profile}" suffix to the URL.  This references the `<var name="profile"...>` tag we added earlier.
+
+When we're done, the `StartPage.xml` contents will look like:
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<y scrollableY="true" xsi:noNamespaceSchemaLocation="StartPage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <!-- We need to import the UserProfile class since we use it
+        in various places of this view. -->
+    <import>
+        import com.example.myapp.models.UserProfile;
+    </import>
+
+    <!-- Reference to the UserProfile looked up
+        from the Controller.  This lookup is registered
+        in the onStartController() method of the MyRADApp class. -->
+    <var name="profile" lookup="UserProfile"/>
+    <define-category name="HELLO_CLICKED"/>
+
+    <define-category name="MAIN_MENU" />
+    <title>Hi World</title>
+    <button text="Hello World">
+        <bind-action category="HELLO_CLICKED"/>
+    </button>
+    <buttons
+            layout="new GridLayout(2,2)"
+            actionCategory="MAIN_MENU"
+            actionTemplate.actionStyle="IconOnly"
+            limit="2"
+    />
+    <button rad-href="#AboutPage">About Us</button>
+
+    <!-- This button links to the UserProfilePage
+         The {profile} suffix means that the UserProfilePage
+         should use the "profile" reference created by
+         the <var name="profile"...> tag above.
+     -->
+    <button rad-href="#UserProfilePage{profile}">User Profile</button>
+
+</y>
+----
+
+Now, we we click on the _User Profile_ button, it should display the details of the profile we created:
+
+image::images/bound-user-profile-page.png[]
+
+[TIP]
+====
+Since the _My Profile_ form is a "sub-form" of your app, the _Hot Reload_ > _Reload Simulator_ option would still require you to navigate back to the form when you make changes to the source.  While working on "sub-forms" (i.e. forms that aren't displayed automatically on app start), I recommend enabling the _Hot Reload_ > _Reload Current Form_ option in the simulator.
+
+image::images/hot-reload-reload-current-form.png[]
+
+This way, when you make changes to the source and the simulator reloads, it will automatically navigate back to the this form.  Be aware, however, that upon reload, you will still lose your application state such as the controller hierarchy and model data.  For example, you'll notice that the "back" button doesn't appear in your _My Profile_ form after reload.
+
+You can disable this feature when you are finished working on the _My Profile_ form by changing _Hot Reload_ back to _Reload Simulator_.
+
+====
+
+=== Fun with Bindings
+
+TIP: Watch the companion https://youtu.be/QdyO4tpYOHs?t=3568[screencast] for this section.
+
+
+TIP: Throughout this guide I use the terms _model_ and _entity_ interchangeably because CodeRAD names it's _model_ class `Entity`.
+
+CodeRAD models are designed to allow for easy binding to other models and to user interface components.  We've already seen how the `<radLabel>` tag can be bound to a model property using the `tag` attribute, but you aren't limited to static labels.  There are `radXXX` components for many of the fundamental Codename One components.  E.g. `<radTextField>`, `<radTextArea>`, `<radSpanLabel>`, and many more.  Later on, you'll also learn how to build your own _binding_ components, but for now, let's have a little bit of fun with the standard ones.
+
+To demonstrate that you can bind more than one component to the same property, let's add a `<radTextField>` that binds to the _email_ property just below the existing `<radLabel>`.
+
+[source,xml]
+----
+<radTextField tag="Person.email"/>
+----
+
+image::images/radlabel-bound-to-same-property-as-radtextfield.png[]
+
+You'll notice that as you type in the _email_ text field, the value of the _email_ label also changes.  This is because they are bound to the same property of the same model.
+
+We can even go a step further.  It is possible to bind _any_ any property to the result of an arbitrary Java expression so that the property will be updated whenever the model is changed.
+
+As an example, let's add a button that is enabled _only_ when the model's _email_ property is non-empty:
+
+[source,xml]
+----
+<button bind-enabled="java:!getEntity().isEmpty(UserProfile.email)">Save</button>
+----
+
+TIP: The _bind-*_ attributes, by default expect their values to be references to a tag (e.g. `UserProfile.email`), but you can alternatively provide a Java expression prefixed with `java:`.
+
+You will notice, now, that if you delete the content of the _email_ text field on the form, the _Save_ button becomes disabled.  If you start typing again, the button will become enabled again.
+
+In this example we bound the _enabled_ property of _Button_ so that it would be updated whenever the model is changed.  You aren't limited to the _enabled_ property though.  You can bind on any property you like.  You can even bind on sub-properties, e.g.:
+
+[source,xml]
+----
+<button bind-style.fgColor="java:getEntity().isEmpty(UserProfile.email) ? 0xff0000 : 0x0">Save</button>
+----
+
+In the above example, the button text will be red when the email field is empty, and black otherwise.
+
+=== Transitions
+
+TIP: Watch the companion https://youtu.be/QdyO4tpYOHs?t=3897[screencast] for this section.
+
+
+By default, changes to bound properties take effect immediately upon property change.  For example, if you bind the _visible_ property of a label, then it will instantly appear when the value changes to true, and instantly disappear when the value changes to false.  Interfaces feel _better_ when changes are animated.
+
+The _rad-transition_ attribute allows you to specify how transitions are handled on property bindings.  Attributes that work particularly well with transitions are ones that change the size or layout of a component.
+
+The following example binds the "layout" attribute on a container so that if the user enters "flow" into the text field, the layout will change to a _FlowLayout_, and for any other value, the layout will be _BoxLayout.Y_:
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<border xsi:noNamespaceSchemaLocation="StartPage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <title>Start Page</title>
+
+    <!-- Define a tag for the layout property.
+            This will add a property to the auto-generated view model class.
+    -->
+    <define-tag name="layout"/>
+
+    <!-- A text field that is bound to the "layout" property
+            As user types, it updates the "layout" property of the view model. -->
+    <radTextField tag="layout"  layout-constraint="north"/>
+
+    <!-- A Container with initial layout BoxLayout.Y.
+        We bind the "layout" property to a java expression that will set layout
+        to FlowLayout if the model's "layout" property is the string "flow", and
+        BoxLayout.Y otherwise.
+
+        The rad-transition="layout 1s" attribute will cause changes to the "layout" property
+        to be animated with a duration of 1s for each transition.
+    -->
+    <y bind-layout='java:"flow".equals(getEntity().getText(layout)) ? new FlowLayout() : BoxLayout.y()'
+       rad-transition="layout 1s"
+       layout-constraint="center"
+    >
+        <label>Label 1</label>
+        <label>Label 2</label>
+        <label>Label 3</label>
+        <label>Label 4</label>
+        <label>Label 5</label>
+        <button>Button 1</button>
+
+    </y>
+
+</border>
+----
+
+If you run the above example, it will begin with rendering the labels vertically in a _BoxLayout.Y_ layout as shown below:
+
+image::images/rad-transition-boxlayout-state.png[]
+
+If you type the word "flow" into the textfield, it will instantly (upon the "w" keystroke) start animating a change to a flow layout, the final result shown below:
+
+image::images/rad-transition-flow-state.png[]
+
+.A video clip of this transition
+video::vY60zLo6f5E[youtube, width=440, height=800]
+
+[#implicit-view-models]
+.Implicit View Models
+****
+If you don't specify the model class to use for your view using the `rad-model` attribute (see the _UserProfilePage_ example), it will use an _implicit_ view model - meaning that the annotation processor generates a view model for this view automatically.  In such cases, it will generate properties on the view model to correspond _tag definitions_ in the view.
+
+In the above _transition_ example, we defined a tag named "layout" using the the _define-tag_ tag:
+
+[source,xml]
+----
+<define-tag name="layout"/>
+----
+
+This resulted in our view model having a property named "layout", which is assigned this "layout" tag.  We then bound the text field to this property using:
+
+[source,xml]
+----
+<radTextField tag="layout"/>
+----
+
+And we referenced it in the binding expression for the _layout_ parameter of the `<y>` container:
+
+[source,xml]
+----
+<y bind-layout='java:"flow".equals(getEntity().getText(layout)) ? new FlowLayout() : BoxLayout.y()'>...</y>
+----
+
+Let's unpack that expression a little bit:
+
+The part that refers to our "layout" tag is:
+
+[source,java]
+----
+getEntity().getText(layout))
+----
+
+`getEntity()` gets the view model of this view, which is an instance of our _implicit_ view model.  The `getText(layout)` method gets the value of the `layout` tag (which we defined above in the `<define-tag>` tag) as a string.
+
+****
+
+
+==== Supported Properties
+
+Currently transitions don't work with every property.  Transitions are primarily useful only for properties that change the size or layout of the view.  For example, currently if you add a transition to a binding on the "text" property of a label, the text itself will change _instantly_, but if the bounds of the new text is different than the old text, you will see the text bounds grow or shrink according to the transition.
+
+Style animations are also supported on the "uiid" property, so that changes to colors, font sizes, padding etc, will transition smoothly when the _uiid_ is changed.  Currently style attributes (e.g. _style.fgColor_) won't use transitions, but this will be added soon.
+
+[#entity-lists]
+=== Entity Lists
+
+TIP: Watch the companion https://youtu.be/QdyO4tpYOHs?t=4324[screencast] for this section.
+
+So far our examples have involved only views of _single_ models.  Most apps involve _list_ views where multiple models are rendered on a single view.  E.g. In mail apps that include a list of messages, each row of the list corresponds to a distinct _message_ model.  CodeRAD's `<entityList>` tag provides rich support for these kinds of views.
+
+To demonstrate this, let's create a view with an entityList.  The contents of this view are as follows:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8" ?>
+<border xsi:noNamespaceSchemaLocation="StartPage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <title>Entity List Sample</title>
+    <entityList layout-constraint="center"
+        provider="com.example.myapp.providers.SampleListProvider.class"
+    />
+</border>
+----
+
+This defines a view with single entityList.  The _provider_ attribute specifies the class will provide data to this view.  We need to implement this class _and_ add a lookup to an instance of it in the controller.
+
+The following is a sample provider implementation:
+
+[source,java]
+----
+package com.example.myapp.providers;
+
+import com.codename1.rad.models.AbstractEntityListProvider;
+import com.codename1.rad.models.EntityList;
+import com.example.myapp.models.UserProfile;
+import com.example.myapp.models.UserProfileImpl;
+
+public class SampleListProvider extends AbstractEntityListProvider {
+
+    @Override
+    public Request getEntities(Request request) {
+        EntityList out = new EntityList();
+        {
+            UserProfile profile = new UserProfileImpl();
+            profile.setName("Steve Hannah");
+            profile.setEmail("steve@example.com");
+            out.add(profile);
+        }
+        {
+            UserProfile profile = new UserProfileImpl();
+            profile.setName("Shai Almog");
+            profile.setEmail("shai@example.com");
+            out.add(profile);
+        }
+        {
+            UserProfile profile = new UserProfileImpl();
+            profile.setName("Chen Fishbein");
+            profile.setEmail("chen@example.com");
+            out.add(profile);
+        }
+        request.complete(out);
+        return request;
+    }
+
+}
+
+----
+
+Our provider extends `AbstractEntityListProvider` and needs to implement at least the _getEntities()_ method.  For most real-world use-cases you'll need to override the `createRequest()` method, but we'll reserve discussion of that for later.
+
+`getEntities()` is triggered whenever the entity list is requesting data.  The _request_ parameter may include details about which entities the list would like to receive.  Out of the box, there two basic request types: _REFRESH_ and _LOAD_MORE_.  A _REFRESH_ request is triggered when the list if first displayed, and whenever the user does a "Pull to refresh" action on the list view.  A _LOAD_MORE_ request is triggered when the user scrolls to the bottom of the list.
+
+You can use the `Request.setNextRequest()` method to provide details about the current cursor position, so that the next _LOAD_MORE_ request will know where to "start".
+
+One last thing, before we fire up the simulator:  We need to add a lookup to an instance of our provider.  The best place to register lookups is in the `onStartController()` method of the controller.  In your _MyRadApp_'s `onStartController()` method, add the following:
+
+[source,java]
+----
+addLookup(new SampleListProvider());
+----
+
+Now, when you launch the simulator, you will see something like the following:
+
+image::images/sample-list-view.png[]
+
+==== List Row Renderers
+
+I'll be the first to admit that our list looks a little plain.  Let's spice it up a bit by customizing its row renderer.  We will tell the list view how to render the rows of the list by providing a `<row-template>` as shown below:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8" ?>
+<border xsi:noNamespaceSchemaLocation="StartPage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <title>Entity List Sample</title>
+    <entityList layout-constraint="center"
+                provider="com.example.myapp.providers.SampleListProvider.class"
+    >
+        <row-template>
+            <border uiid="SampleListRow">
+                <profileAvatar size="1.5rem" layout-constraint="west"/>
+                <radLabel tag="Person.name" layout-constraint="center"
+                    component.style.font="native:MainRegular 1rem"
+                          component.style.marginLeft="1rem"
+                />
+            </border>
+        </row-template>
+    </entityList>
+</border>
+
+----
+
+Let's unpack this snippet so we can see what is going on.  The `<row-template>` tag directs its parent `<entityList>` tag to use its _child_ container as a row template.  The `<border>` tag inside the `<row-template>`, then will be duplicated for each row of the list.
+
+Inside this `<row-template>` tag, the _context_ is changed so that the _model_ is the row model, rather than the model of the the parent view class.  Therefore property and entity views like `<radLabel>` and `<profileAvatar>` will use the row's entity object as its model.  Notice that the `<radLabel>` component is bound to the _Person.name_ tag, so it will bind to the corresponding property of the row.
+
+TIP: This example used the `Person.name` tag whereas we could have used the `UserProfile.name` tag here.  Since we defined the `UserProfile.name` tag as being equal to `Person.name` inside the `UserProfile` interface, these are equivalent.  I generally prefer to reference the more generic schema tags (e.g. From the `Thing` and `Person` schemas) in my views to make them more easily portable between projects.
+
+The `<profileAvatar>` tag is a handy component that will display an avatar for the entity.  This will check to see if the entity has any properties with the `Thing.thumbnailUrl` tag, and display that image if found.  Otherwise it will render an image of the first letter of the name (I.e. the value of a property with the `Thing.name` tag).  For the `size` parameter we specify "1.5rem", which means that we want the avatar to be 1.5 times the height of the default font.
+
+One last thing, before we fire up the simulator.  The `<border>` tag in the row template has `uiid="SampleListRow"`, which refers to a style that needs to be defined in the CSS stylesheet.  Add the following snippet to the common/src/main/css/theme.css file:
+
+[source, css]
+----
+SampleListRow {
+    background-color: white;
+    border:none;
+    border-bottom: 0.5pt solid #ccc;
+    padding: 0.7rem;
+}
+----
+
+Now, if you start the simulator, it should show you something like the following:
+
+image::images/row-template-sample.png[]
+
+
+==== Responding to List Row Events
+
+Suppose we want the app to navigate to a UserProfile form for the selected user, when the user clicks on one of the rows of the list.
+
+The simplest way to achieve this is to add a button to our row-template as follows:
+
+[source,xml]
+----
+<button layout-constraint="east"
+    rad-href="#UserProfilePage{}">Show Profile</button>
+----
+
+The `{}` at the end of the _rad-href_ URL is a short-hand for the "current entity", and in this context the current entity is the one corresponding to the list row.  This would be the same as `#UserProfilePage{context.getEntity()}`.
+
+Upon saving the _StartPage.xml_ file, the simulator should reload with the "Show Profile" button added to each row as shown here:
+
+image::images/show-profile-button.png[]
+
+And clicking the _ShowProfile_ button on any row, will show the _UserProfilePage_ for the corresponding UserProfile.  E.g. If I click on the "Shai Almog" row's _ShowProfile_ button, it will display:
+
+image::images/shai-user-profile-page.png[]
+
+[#using-lead-component]
+==== Using a Lead Component
+
+It seems a bit redundant to have a "Show Profile" button on each row.  Why not just show the profile when the user presses anywhere on the row.  This can be achieved by setting the button as the _lead component_ for the row's container.  Then the container will pipe all of its events to the button for handling.  We would generally, then, hide the button from view.
+
+We use the `rad-leadComponent` attribute on the container to set its lead component.  This attribute takes a query selector (similar to a CSS selector) to specify one of its child components as the lead component.
+
+Change the `<row-template>` and its contents to the following:
+
+[source,xml]
+----
+<row-template>
+    <border uiid="SampleListRow" rad-leadComponent="ShowProfileButton">
+        <profileAvatar size="1.5rem" layout-constraint="west"/>
+        <radLabel tag="Person.name" layout-constraint="center"
+            component.allStyles.font="native:MainRegular 1rem"
+                  component.allStyles.marginLeft="1rem"
+        />
+        <button layout-constraint="east"
+                hidden="true"
+                uiid="ShowProfileButton"
+                rad-href="#UserProfilePage{}">Show Profile</button>
+    </border>
+</row-template>
+----
+
+The key ingredients here are:
+
+`rad-leadComponent="ShowProfileButton"`::
+This says to use the component with UIID "ShowProfileButton" as the lead component.
+
+`<button ... uiid="ShowProfileButton"...>`::
+Assign the "ShowProfileButton" uiid to the button so that the `rad-leadComponent` selector will find it correctly.
+
+`<button ... hidden="true" ...>`::
+Set the button to be hidden so that it doesn't appear on in the view.  It isn't sufficient to set `visible="false"` here, as this would still retain its space in the layout.  The `hidden` attribute hides the button completely without having space reserved for it in the UI.
+
+After making these changes, the view should look like:
+
+image::images/list-with-lead-component.png[]
+
+And clicking on any row will trigger the `rad-href` attribute on the button, which will display the user profile for that particular row.
+
+[#intraform-navigation]
+=== Intra-Form Navigation
+
+TIP: Watch the companion https://youtu.be/QdyO4tpYOHs?t=5391[screencast] for this section.
+
+
+Earlier, in <<form-navigation>>, we learned how to navigate between forms using a _button_ tag with the `rad-href` attribute.  When developing for tablet and desktop, you may want to navigate to a different view within the same form; sort of like using frames in HTML.  A _mail_ app will often have a list of messages on the left side of the screen, and details of the currently selected message on the right, as shown in the Gmail app screenshot below:
+
+image::images/gmail-app-screenshot.png[]
+
+In our previous examples with `rad-href`, we specified _which_ view we wanted to navigate to, but we didn't specify _where_ we wanted the view to be displayed.  By default, it navigates to a new form whose _FormController_ is a child of the current _FormController_.  The full syntax of `rad-href` supports targeting the view to a different location in both the view hierarchy and the controller hierarchy.
+
+Suppose we wanted our view to be displayed inside a _Sheet_ instead of a new form.  Then we could do something like:
+
+[source,xml]
+----
+<button rad-href="#AboutPage sheet">About Page</button>
+----
+
+Alternatively, suppose we wanted to display the view inside a Container within the current form.  Then we could do:
+
+[source,xml]
+----
+<border name="TargetFrame"></border> <1>
+
+...
+
+<button rad-href="#AboutPage sel:#TargetFrame">About Page</button> <2>
+
+----
+<1> A placeholder container where the _AboutPage_ view will be loaded.
+<2> The `sel:` prefix for the target means that the remainder will be treated as a `ComponentSelector` query, which is similar to a CSS selector of Javascript Query Selector.  In our case we are targeting the component with name "TargetFrame".
+
+In the above example, when the user presses the button, it will load the _AboutPage_ view into the _TargetFrame_ container.
+
+Change the contents of the _StartPage_ view to:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8" ?>
+<splitPane xsi:noNamespaceSchemaLocation="StartPage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <title>Intra-form Navigation</title>
+    <var name="profile" lookup="com.example.myapp.models.UserProfile"/>
+    <y>
+        <label>Menu</label>
+        <button rad-href="#AboutPage sel:#ContentPanel">About Page</button>
+        <button rad-href="#UserProfilePage{profile} sel:#ContentPanel">My Profile</button>
+        <button rad-href="#AboutPage sheet">About Page in Sheet</button>
+    </y>
+    <border>
+        <spanLabel layout-constraint="north">This example works best in Tablet or Desktop Mode.
+        It demonstrates intra-form navigation.
+        </spanLabel>
+        <border layout-constraint="center" name="ContentPanel"></border>
+
+    </border>
+</splitPane>
+----
+
+TIP: The above example demonstrates the `<splitPane>` component that is useful for tablet and desktop UIs.  See <<using-split-panes>> to learn more about the _SplitPane_ component.
+
+Launch the simulator, and enable the _Desktop_ skin by selecting the  _Skin_ > _Desktop.skin_ menu item as shown below.
+
+image::images/skins-desktop-skin.png[]
+
+Then the app should appear something like the followign screenshot:
+
+image::images/intra-form-navigation-0.png[]
+
+Click on the _My Profile_ link on the left, and you should see the user profile page appear on the right, as shown below.
+
+image::images/intra-form-navigation-sample.png[]
+
+If you click on the _About Page in Sheet_ button, it will load the _AboutPage_ view inside a sheet as shown here.
+
+image::images/intra-form-navigation-sheet.png[]
+
+You can also control the position of where the sheet will be shown by using one `sheet-top`, `sheet-left`, `sheet-right`, or `sheet-center` instead of the `sheet` option that we used in this example.
+
+
+==== Navigation Transitions
+
+You can use the `rad-transition` attribute in conjuction with the `rad-href` attribute also, to specify a transition to be used when replacing a container's content with a new view.
+
+To demonstrate this, let's add a `rad-transition` attribute to each button in the menu from the previous example.  Change the first _AboutPage_ button to:
+
+[source,xml]
+----
+<button rad-href="#AboutPage sel:#ContentPanel"
+            rad-transition="rad-href 0.5s flip"
+        >About Page</button>
+----
+
+Now, when you click this button, it should transition the _AboutPage_ in with a _flip_ transition with a duration of 0.5 seconds.
+
+Some other transition types include _fade_, _slide_, _cover_, and _uncover_ with variants to specify direction, such as _slide-up_, _slide-down_, _slide-left_, etc...
+
+See <<chapter-transitions>> for more details and examples using transitions.
+
+=== Custom View Controllers
+
+TIP: Watch the companion https://youtu.be/QdyO4tpYOHs?t=5976[screencast] for this section.
+
+
+Up until now, we haven't created any custom controllers for our views, other than the application controller (the _MyRadApp_ class).  Since all events propagate up the controller hierarchy, it is possible just to handle all of the events in the application controller, as we've been doing.  Keeping all of our logic inside a single _application-wide_ controller has some benefits for small, example apps, but for most real-world apps, you'll want to be intentional about your application's architecture.
+
+Best practice is to create a _ViewController_ for each view, which will be responsible for handling application logic pertaining to that view.   This practice will promote better modularity, which will make it easier to maintain your code, and to reuse components in other projects.
+
+You can assign a custom view controller to a view by adding a `view-controller` attribute to the root element of your view.  E.g.
+
+[source,xml]
+----
+<?xml version="1.0" ?>
+<y view-controller="com.example.myapp.controllers.StartPageViewController">
+   .....
+</y>
+----
+
+[TIP]
+====
+If your controller class is covered by an _import_ directive in your view, then you could just provide the _simple_ name of the controller class, rather than the fully-qualified name.  E.g. the following would also work:
+
+[source, xml]
+----
+<?xml version="1.0" ?>
+<y view-controller="StartPageViewController">
+  <import>
+    import com.example.myapp.controllers.*;
+  </import>
+  ...
+</y>
+----
+====
+
+Let's expand this to a complete example.
+
+In our sample app project, create a new package in the _common/src/main/java_ directory named _com.example.myapp.controllers_, and create a new Java class in this package named "StartPageViewController.java" with the following contents:
+
+.common/src/main/java/com/example/myapp/controllers/StartPageViewController.java
+[source,java]
+----
+package com.example.myapp.controllers;
+
+import com.codename1.rad.controllers.Controller;
+import com.codename1.rad.controllers.ViewController;
+
+public class StartPageViewController extends ViewController {
+    /**
+     * Creates a new ViewController with the given parent controller.
+     *
+     * @param parent
+     */
+    public StartPageViewController(Controller parent) {
+        super(parent);
+    }
+}
+
+----
+
+Now, change the _StartPage.xml_ template to the following content:
+
+.common/src/main/rad/views/com/example/myapp/StartPage.xml
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8" ?>
+<y view-controller="com.example.myapp.controllers.StartPageViewController"
+   xsi:noNamespaceSchemaLocation="StartPage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <title>Example Custom View Controller</title>
+
+    <!-- Define an action category for the controller to
+        receive events when the "Hello" button is clicked -->
+    <define-category name="HELLO_CLICKED"/>
+
+    <spanLabel>Click the button below to trigger an action in the controller.</spanLabel>
+
+    <button>
+        <bind-action category="HELLO_CLICKED"/>
+    </button>
+
+
+</y>
+----
+
+Now try running the example in the simulator.
+
+image::images/custom-view-controller-run1.png[]
+
+Our button is conspicuously missing from this form.  This is because it is bound to the _HELLO_CLICKED_ action category, but our controller hasn't added any actions to this category yet.  Let's add an action to our view controller now.
+
+[source,java]
+----
+@Override
+    protected void initControllerActions() {
+        super.initControllerActions();
+
+        // Register an action with HELLO_CLICKED category so that the view
+        // will bind it to the button.
+        ActionNode.builder()
+                .label("Hello")
+                .addToController(this, StartPage.HELLO_CLICKED, evt -> {
+
+                    // Consume the event so that it doesn't propagage up the controller
+                    // hierarchy.
+                    evt.consume();
+
+                    // Show a message to confirm that we received the event.
+                    ToastBar.showInfoMessage("You clicked me");
+                });
+    }
+----
+
+The simulator should automatically reload upon saving the controller file, and the "Hello" button should appear.  Click "Hello" to confirm that our _ToastBar_ info message appears as shown below:
+
+image::images/custom-controller-you-clicked-me.png[]
+
+[#views-within-views]
+=== Views within Views
+
+TIP: Watch the companion https://youtu.be/QdyO4tpYOHs?t=6290[screencast] for this section.
+
+
+Since RAD views are Components themselves, they can be used inside other views, just like other components are.  To demonstrate this,
+let's create create a form to allow users to enter contact information such as name, email, billing address, and shipping address.  Since the billing address and shipping address will likely use the same fields, we'll create a _AddressView_ view and use it from the main form.
+
+Create a new view in the same package as our existing views named _AddressForm.xml_ with the following contents:
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<y xsi:noNamespaceSchemaLocation="AddressForm.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <define-tag name="streetAddress" value="PostalAddress.streetAddress"/>
+    <define-tag name="city" value="PostalAddress.addressLocality"/>
+    <define-tag name="province" value="PostalAddress.addressRegion"/>
+    <define-tag name="country" value="PostalAddress.addressCountry"/>
+    <define-tag name="postalCode" value="PostalAddress.postalCode"/>
+
+    <radTextField tag="streetAddress"
+                  component.hint="Street Address"/>
+    <radTextField tag="city"
+        component.hint="City"
+    />
+    <radTextField tag="province"
+        component.hint="Province"
+    />
+    <radTextField tag="country"
+        component.hint="Country"
+    />
+    <radTextField tag="postalCode"
+        component.hint="Postal Code"
+    />
+
+</y>
+----
+
+Now create another view called _ContactForm.xml_ in the same directory with the following contents.
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<y scrollableY="true" xsi:noNamespaceSchemaLocation="ContactForm.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <title>Contact Form</title>
+
+    <!-- Define some tags for the view model -->
+    <define-tag name="name" value="Person.name"/>
+    <define-tag name="email" value="Person.email"/>
+
+    <label>Name</label>
+    <radTextField tag="name"></radTextField>
+
+    <label>Email</label>
+    <radTextField tag="email"></radTextField>
+
+    <!-- Embed an AddressForm view for the billing address -->
+    <label>Billing Address</label>
+    <addressForm view-model="new"/>
+
+    <!-- Embed another AddressForm view for the shipping address -->
+    <label>Shipping Address</label>
+    <addressForm view-model="new"/>
+
+    <!-- Submit button .. doesn't do anything yet -->
+    <button text="Submit"/>
+
+</y>
+----
+
+And finally, modify the `actionPerformed()` method of the `MyRADApp` class to display the contact form we just created on start:
+
+
+
+[source,java]
+----
+public void actionPerformed(ControllerEvent evt) {
+
+        with(evt, StartEvent.class, startEvent -> {
+            if (true) {
+                // Temporarily making ContactForm the default form.
+                new ContactFormController(this).show();
+                return;
+            }
+            ...
+        });
+        super.actionPerformed(evt);
+    }
+----
+
+If you fire up the simulator, the app should look something like the following screenshot:
+
+image::images/embedded-address-forms.png[]
+
+Notice that the contact form includes two embedded address forms.  One for the _billing address_ and the other for the _shipping address_.  Let's walk through the _ContactForm.xml_ source to see what is happening here.
+
+You've seen most of the tags before in previous examples.  The new part that I'd like to highlight here are the two `<addressForm>` tags:
+
+[source,xml]
+----
+<!-- Embed an AddressForm view for the billing address -->
+    <label>Billing Address</label>
+    <addressForm view-model="new"/>
+
+    <!-- Embed another AddressForm view for the shipping address -->
+    <label>Shipping Address</label>
+    <addressForm view-model="new"/>
+----
+
+These create instances of the `AddressForm` view that we defined in the `AddressForm.xml`file.  The `view-model` attribute is necessary to specify the view model that should be used for the address form.  The value "new" is a special value that indicates that the view should create a new view model for itself.    If this were omitted, it would attempt to use the view model of the current view which we don't want here, because the model for the ContactForm isn't compatible with the model for the AddressForm.
+
+This is roughly equivalent to:
+
+[source,xml]
+----
+<addressForm view-model="new AddressFormModelImpl()"/>
+----
+
+With our current contact form, the _AddressForm_ view models aren't connected to the _ContactForm_ view model, which isn't idea.  Let's improve this by defining tags for _billingAddress_ and _shippingAddress_ in the _ContactForm_ view model:
+
+[source,xml]
+----
+<define-tag name="shippingAddress" type="AddressFormModel" initialValue="new"/>
+<define-tag name="billingAddress" type="AddressFormModel" initialValue="new"/>
+----
+
+TIP: The `initialValue` attribute here specifies the initial value that new model objects should assign to the property.  In this case we use the special value "new", which is equivalent here to `initialValue="new AddressFormModelImpl()"`.  If we omit this `initialValue` it will leave the properties as `null` until we explicitly set them, which might bite us later on.
+
+Now, change the `view-model` attribute of the `<addressForm>` tags to use the _shippingAddress_ and _billingAddress_ properties respectively:
+
+[source,xml]
+----
+<!-- Embed an AddressForm view for the billing address -->
+<label>Billing Address</label>
+<addressForm view-model="context.getEntity().getBillingAddress()"/>
+
+<!-- Embed another AddressForm view for the shipping address -->
+<label>Shipping Address</label>
+<addressForm view-model="context.getEntity().getShippingAddress()"/>
+----
+
+Notice that I used the explicit `getBillingAddress()` and `getShippingAddress()` methods on the _ContactForm_ view model.  I could also have used the more generic `getEntity(TAG)` method:
+
+[source,java]
+----
+context.getEntity().getEntity(billingAddress)
+
+context.getEntity().getEntity(shippingAddress)
+----
+
+Both are fine here, but I chose to use the explicit getters as it is more succinct and easier to understand.
+
+Later on you'll learn another, more succinct, way to access properties of the view model using RAD property macros.  E.g. The following is also equivalent:
+
+[source, xml]
+----
+<!-- Embed an AddressForm view for the billing address -->
+<label>Billing Address</label>
+<addressForm view-model="${billingAddress}.entity"/>
+
+<!-- Embed another AddressForm view for the shipping address -->
+<label>Shipping Address</label>
+<addressForm view-model="${shippingAddress}.entity"/>
+----
+
+[NOTE]
+====
+*Fun Fact*: You can also use the same model for both views.  E.g.:
+
+[source,xml]
+----
+<!-- Embed an AddressForm view for the billing address -->
+<label>Billing Address</label>
+<addressForm view-model="${billingAddress}.entity"/>
+
+<!-- Embed another AddressForm view for the shipping address -->
+<label>Shipping Address</label>
+<addressForm view-model="${billingAddress}.entity"/>
+----
+
+In this case, if you start typing into any fields in _billing address_, it will also update the corresponding fields in _shipping address_.
+====
+
+
+
+=== Developing Custom Components
+
+Since you can use _any_ component (i.e. `com.codename1.ui.Component` subclass) in your views, it follows that you can also develop your own components and use them in your views.  You've already seen a special case of this in <<views-within-views>>, where we used a view that we created from another view.
+
+The only thing you _may_ need to do in order to use your custom component from a _view_ is add an _import_ statement for your component's class.
+
+TIP: RAD views automatically import several of the core packages containing components, such as `com.codename1.ui.*`, `com.codename1.rad.ui.entityviews.*`, etc...  You only need to explicitly _import_ packages and classes that aren't among these default packages.
+
+If your component has a _no-arg_ constructor, then it should _just_ work.  If it doesn't have a _no-arg_ constructor, or it has some special requirements for how it is used, then you may need to also implement a _ComponentBuilder_ for your component.  Later on, I'll also show you how to use dependency injection to have certain properties and arguments automatically "injected" into your component at runtime.
+
+To demonstrate this, create a Java class named `HelloComponent` in the package `com.example.myapp.components`, with the following content:
+
+[source,java]
+----
+package com.example.myapp.components;
+
+import com.codename1.ui.Container;
+import com.codename1.ui.Label;
+import com.codename1.ui.layouts.BorderLayout;
+
+/**
+ * A custom component that displays a hello message.
+ */
+public class HelloComponent extends Container {
+    private Label helloLabel = new Label();
+    private String helloMessage;
+
+    public HelloComponent() {
+        super(new BorderLayout());
+        add(BorderLayout.CENTER, helloLabel);
+    }
+
+    /**
+     * Set the hello message to display.
+     * @param helloMessage
+     */
+    public void setHelloMessage(String helloMessage) {
+        this.helloMessage = helloMessage;
+        helloLabel.setText("Hello " + helloMessage);
+    }
+
+
+    /**
+     * Gets the Hello Message.
+     * @return
+     */
+    public String getHelloMessage() {
+        return helloMessage;
+    }
+}
+
+----
+
+No open the contact form from the previous example and add an import statement for our new package:
+
+[source,xml]
+----
+<import>
+    import com.example.myapp.components.HelloComponent;
+</import>
+----
+
+If you save the file, it will automatically recompile the XML schema so that the `<helloComponent>` tag will be available for type hinting/autocompletion in a few moments.
+
+image::images/hello-componet-typehint.png[]
+
+Add the `helloMessage` attribute to set the message in our component.  Notice that IntelliJ provides type hints for this property also.  It automatically picks up all the setters and getters for your class and converts them into XML attributes.
+
+image::images/hello-component-attribute-autocomplete.png[]
+
+Let's add an instance that says "Hello Steve":
+
+[source, xml]
+----
+<helloComponent helloMessage="Steve"/>
+----
+
+The result:
+
+image::images/hello-steve.png[]
+
+
+
+==== EntityView and PropertyView
+
+If your component is meant to "bind" to a model, then you should consider extending either `AbstractEntityView` or `PropertyView`, as these include built-in support for binding to entities.  If your component is meant to be a view for a single property, then `PropertyView` would make sense.  If, however, it is meant to bind to multiple properties on a model, then you should extend `AbstractEntityView`.  As we've seen before, in <<views-within-views>>, you could create an _EntityView_ entirely in XML, RAD views _do_ get compiled to subclasses of `AbstractEntityView`.  The choice is yours.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

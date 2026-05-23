@@ -1,0 +1,2892 @@
+== App Example 1: A Twitter Clone
+
+TIP: In this chapter we build a clone of the Twitter mobile app.  You can see the completed project at https://github.com/shannah/tweetapp.  You can also use the completed app as a template for building your own project on https://start.codenameone.com/index.php?-table=app_templates&-action=browse&app_template_id=%3D6[Codename One Initializr].
+
+In <<getting-started>> we covered the basics of CodeRAD.  In this chapter we'll put our knowledge to the test as we build a clone of the Twitter mobile app.
+
+As Julie Andrews says, let's start at the very beginning: The start page and signup/signing workflow.  Below are some screenshots from the actual Twitter iOS app running on my iPhone 8.
+
+NOTE: In this chapter we will replicate these forms and workflow using CodeRAD.  This tutorial will focus only on the _client_ portion of the app.  Where the _real_ app would require server interaction (e.g. login and registration), we will create mock implementations that run on the client.  These mock implementations can be extended to support your preferred server-side technology, but that is beyond the scope of this tutorial.
+
+image::images/twitter-entrance-flowchart.png[]
+
+=== Creating the Project
+
+To get started, go to https://start.codenameone.com, and select "Code RAD (MVC) Starter Project" from the _Templates_ menu.
+
+image::images/initializr-select-coderad-starter-project.png[]
+
+For the package name, change it to "com.example.tweetapp", and also change the _Main Class_ to "Tweetapp".
+
+The press the _Download_ button.
+
+After a few seconds you should be prompted to download the project as a ZIP file.  Save this zip file somewhere on your local drive, extract it, then open it in IntelliJ IDEA.
+
+Once the project is opened, press the
+image:images/intellij-run-button.png[]
+icon on the toolbar to run the project in the Codename One simulator.
+
+NOTE: The first time you run and build the project it will take some time because it needs to download all of the project dependencies.  Subsequent builds should only take a few seconds.
+
+.The starter project running inside the Codename One simulator
+
+image::images/starter-project-run.png[]
+
+TIP: This is the same starter project that we used in the <<getting-started>> tutorial. I recommend you go through the <<getting-started>> tutorial before starting this one as it will provide you with the fundamentals required to move forward.
+
+
+=== Creating the Views
+
+The flow-chart above shows five forms that we will be recreating:
+
+. Welcome Page
+. Signup Page
+. Signin Page
+. Forgot Password
+. About Twitter
+
+We'll begin by making empty views for each of these forms.
+
+TIP: All of the views for this project are located in the _common/src/main/rad/views_ directory.  See <<under-the-hood>> for a brief of the project layout.
+
+First let's create a new package for our views.  Expand the _common/src/main/rad/views/com/example/tweetapp_ nodes in the project inspector on the left.  Then right-click the _tweetapp_ node and select _New_ > _Directory_
+
+image::images/tweet-app-new-directory.png[]
+
+Enter "views" for the folder name, and press _Enter_.
+
+image::images/tweet-app-package-name-views.png[]
+
+Then right-click on this new _views_ directory node, and select _New_ > _File_:
+
+image::images/tweet-app-views-new-file.png[]
+
+Enter "WelcomePage.xml", in the prompt, and press _Enter_.
+
+image::images/tweetapp-create-welcomepage.png[]
+
+Now, open the _WelcomePage.xml_ file, and change the contents to the following:
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<y>
+    <label>Welcome Page</label>
+</y>
+----
+
+Before proceeding, let's try running the project in the simulator to make sure that it compiles OK.  Running the project will also run the CodeRAD annotation processor which will generate Java classes from our WelcomePage view so that they will be available for type hinting and auto-complete in IntelliJ.
+
+Press the image:images/intellij-run-button.png[] button on the toolbar.  It may take a while to run the first time as it might have to download dependencies.   Subsequent runs should only take a few seconds.
+
+If all goes well, you should see the simulator pop up with a "Hi World" app as shown here:
+
+image::images/tweetapp-hi-world.png[]
+
+Notice that this isn't showing our _WelcomePage_ yet.  It is showing the default _StartPage_ template from the template.
+
+Let's modify the _ApplicationController_ so that it shows our _WelcomePage_ view as the default view.
+
+The _ApplicationController_ class for this application is defined in the _TweetApp_ class inside the _com.example.tweetapp_ package (inside the _src/main/java_ directory).
+
+image::images/tweetapp-project-inspector-tweetapp-selected.png[]
+
+Open this file and find the `actionPerformed()` method.  It should look something like the following listing:
+
+[source,java]
+----
+ public void actionPerformed(ControllerEvent evt) {
+
+        with(evt, StartEvent.class, startEvent -> {
+            if (!startEvent.isShowingForm()) {
+                // If app was re-opened, it will automatically
+                // show the current form, and set the showingForm flag
+                // In such a case, we don't want to show the welcome form.
+                startEvent.setShowingForm(true);
+                new StartPageController(this).show();
+            }
+        });
+        super.actionPerformed(evt);
+    }
+----
+
+TIP: The `actionPerformed()` method is triggered for every event that propagages up to the _ApplicationController_.  You can monitor and handle many application events from inside this method.
+
+Let's change the `new StartPageController(this).show()` call to
+
+[source,java]
+----
+new WelcomePageController(this).show();
+----
+
+NOTE: The `WelcomePageController` class is a `FormController` subclass that is generated from the `WelcomePage.xml` view by the CodeRAD annotation processor.  If you haven't built the project since creating the `WelcomePage.xml` file, then IntelliJ might complain that it can't find the class.  Don't worry, about these warnings as they should "fix" themselves when you run or build the project.
+
+Now, if you restart the simulator, it should show our _WelcomePage_ view.
+
+image::images/tweetapp-welcome-page-form-blank.png[]
+
+=== Hot Reload
+
+The Codename One simulator has a _Hot Reload_ feature that can dramatically improve your development experience by reducing the turnaround time for testing changes to your source code.  See <<hot-reload>> for more information about this feature.
+
+For most of this tutorial, I will be using the _Reload Current Form_ setting of Hot reload so that the simulator will automatically reload the current form after I make changes to the source.
+
+image::images/hot-reload-reload-current-form.png[]
+
+
+=== The Welcome Page
+
+Our welcome page is currently just a placeholder that says "Welcome".  Let's change it to resemble the Twitter welcome page as shown below:
+
+image::images/twitter-welcome-page.png[]
+
+In order to replicate this content and structure, add the following to the _WelcomePage.xml_ file:
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<borderAbsolute
+        xsi:noNamespaceSchemaLocation="WelcomePage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <y layout-constraint="center">
+        <spanLabel>See what's happening in the world right now.</spanLabel>
+        <button>Create account</button>
+    </y>
+
+    <flow layout-constraint="south">
+        <label>Haven an account already?</label>
+        <button>Log in</button>
+    </flow>
+</borderAbsolute>
+----
+
+Nothing fancy here.  I'm just trying to _roughly_ replicate how the form is laid out using Codename One's layout managers.   Now reload the simulator (if you have _Hot Reload_ enabled, then the simulator will reload automatically), and you'll see something that looks like:
+
+image::images/tweet-app-welcome-page-no-style.png[]
+
+Now that the structure is there, let's work on the style.
+
+Let's start with the _Create Account_ button.  According a web search, the _Twitter Blue_ color is `#1DA1F2`, so let's make the button background this _Twitter Blue_ and the foreground color white.  We'll do this by creating a UIID named `TwitterButton` in our stylesheet.
+
+==== The _Create Account_ Button
+
+Open the stylesheet (located at _src/main/css/theme.css_) and add the following:
+
+[source,css]
+----
+TwitterButton {
+    cn1-derive: Button;
+    background-color: #55acee;
+    color: white;
+    border: cn1-pill-border;
+}
+----
+
+And add `uiid="TwitterButton"` to the _Create Account_ button:
+
+[source,xml]
+----
+<button uiid="TwitterButton">Create account</button>
+----
+
+You should see the simulator update within a couple seconds to show you the result of this change:
+
+image::images/twitter-create-account-button-2.png[]
+
+This is getting closer, but the button needs a bit more padding.
+
+Just eye-balling it, I'd say the button has about an equal amount of padding as the text size.  So we'll try padding of `1rem`.
+
+After some trial and error, I found that the it looks best with a padding of 0.7rem.
+
+TIP: The `rem` unit corresponds to the height of the default system font.  You can also use other units such as `mm` (millimetres)`, `pt` (points = 1/72nd of an inch), `px` = pixels, `vh` = percent of the display height, `vw` = percent of the display width, `vmin` = percent of the minimum of the display height and width, or `vmax` = the percent of the maxium of the display height and width.
+
+So our CSS becomes:
+
+[source,css]
+----
+TwitterButton {
+    cn1-derive: Button;
+    background-color: #1DA1F2;
+    color: white;
+    border: cn1-pill-border;
+    padding: 0.7rem;
+    font-size: 1rem;
+    font-family: 'native:MainBold';
+    margin:0;
+}
+----
+
+NOTE: I also explicitly set the _font-size_ and _font-family_ here.  The `native:MainBold` maps to the main bold font of the platform.  On Android this will be the _Roboto_ font, and on iOS it will be the _San Francisco_ font.
+
+And the result looks like the following:
+
+image::images/tweetapp-create-account-button-3.png[]
+
+==== The Form Padding
+
+We also need to add some padding to the form to match the design.  Again, I'm eye-balling it, but it looks like their form has about 10% of the display width.
+
+Create a new UIID in the stylesheet and call it WelcomePage as follows:
+
+[source,css]
+----
+WelcomePage {
+    padding:10vw;
+}
+----
+
+You should see the result instantly in the simulator:
+
+image::images/tweetapp-create-account-button-4.png[]
+
+It's getting closer.  The font isn't exactly right (I'm just using the defualt font right now), but that's OK.  We can circle back and refine the fonts later.
+
+==== The Heading Text
+
+The next obvious thing is the _See what's happening..._ text.  This needs to be larger and black.
+
+I'll create a style named _TwitterHeading1_ for this style.  Set this style as the `textUIID` attribute on the `<spanLabel>` tag:
+
+[source,xml]
+----
+<spanLabel textUIID="TwitterHeading1">See what's happening in the world right now.</spanLabel>
+----
+
+NOTE: We set the `textUIID` attribute instead of the usual `uiid` attribute because the _SpanLabel_ component is a compound component that contains an inner component for rendering the text.  The `uiid` attribute, in this case, only pertains to the outer `SpanLabel` container - so things like borders, backgrounds, and padding, will work as expected there - but the _font_ needs to be applied to the inner component.
+
+And add this style to the stylesheet:
+
+[source,css]
+----
+TwitterHeading1 {
+    font-size: 1.2rem;
+    color: black;
+    margin-bottom: 1rem;
+}
+----
+
+These sizes and margins were arrived at by trial and error.
+
+According to the simulator, we're getting closer to our destination:
+
+image::images/tweetapp-create-account-button5.png[]
+
+==== The Login Link
+
+The footer text and login link are currently too big, and require some padding.  They also highlight a problem that we will face when app is displayed on a phone that has rounded corners and notches, like the iPhone X.
+
+We'll add the `safeArea="true"` attribute on the view's container to ensure that it provides enough padding so that its contents don't get clipped by the corners and notches.
+
+[source,xml]
+----
+<borderAbsolute safeArea="true" ...>
+----
+
+
+We'll also add some styles for the bottom labels and links, we'll call them, `TwitterSmallLabel` and `TwitterSmallLink` respectively.
+
+[source,css]
+----
+TwitterSmallLabel {
+    cn1-derive: Label;
+    font-size: 0.5rem;
+    padding:0;
+    margin:0;
+    color: #66757f;
+    margin-right: 1mm;
+}
+
+TwitterSmallLink {
+    cn1-derive: Button;
+    font-size: 0.5rem;
+    padding:0;
+    margin:0;
+    color: #1DA1F2;
+}
+----
+
+These values were arrived at via trial-and-error, per usual.
+
+NOTE: The `cn1-derive` directive means that this style inherits all of the styles from the given style. E.g. `TwitterSmallLabel` _extends_ the `Label` style, which is defined in the native theme for the platform.
+
+==== Hiding the Title Area
+
+The design doesn't include a typical title bar, but our view currently displays a small white area across the top of the form that from the title that we aren't using.  We can hide this title area by adding:
+
+[source,xml]
+----
+<title hidden="true"/>
+----
+
+==== Background Color
+
+Our background color is currently just using the default form background color which is grayish.  We need to change it to _white_.  We can do that by adding `background-color:white` to the `WelcomePage` style in the stylesheet:
+
+[source,css]
+----
+WelcomePage {
+    padding: 10vw;
+    background-color: white;
+}
+----
+
+image::images/tweetapp-welcome-form-almost-complete.png[]
+
+==== The Title Bar Icon
+
+While this view doesn't have a conventional title bar, it does display the _Twitter_ icon in the _title_ position at the top of the form.  Rather than copy the _real_ twitter icon I had our designer make up a custom icon for our tweet app:
+
+image::images/tweet-app-icon-screenshot.png[]
+
+At my request, he wrapped this icon in a TTF file so that it can be used as an icon font within my application.
+
+TIP: My designer used https://icomoon.io/[IcoMoon] to convert his vector image into a truetype font.
+
+TODO: Add a link to download the .ttf font
+
+To use this font, I created a _fonts_ directory inside the _css_ directory, and copied the font (named _icomoon.ttf_) there, so that the font is located at _src/main/css/fonts/icomoon.ttf_.
+
+image::images/tweetapp-css-fonts-folder.png[]
+
+To use this font in the app, I need to add a `@font-face` directive for the font inside the stylesheet as follows:
+
+[source,css]
+----
+@font-face {
+  font-family: 'icomoon';
+  src: url('fonts/icomoon.ttf');
+}
+----
+
+I also need to create a style that uses this font:
+
+[source,css]
+----
+TwitterIcon {
+    font-family: icomoon;
+    font-size: 1.4rem;
+    color: #1DA1F2;
+}
+----
+
+Now, I can finally add a label to my view that uses this icon font, as a means to display the icon.
+
+[source,xml]
+----
+<center layout-constraint="north">
+    <label iconUIID="TwitterIcon" fontIcon="(char)0xe902" ></label>
+</center>
+----
+
+NOTE: In this version it was necessary to cast the `0xe902` to `char` to avoid a compiler error.  In future versions, this cast will no longer be required.
+
+I use the `iconUIID` attribute to set the UIID of the label's icon so that it uses the our font icon.  The `fontIcon` attribute specifies the character code of the glyph in the font to display. In this case it is the unicode character 0xe902, which I was able to extract from the files provided by IcoMoon.
+
+==== Final Result
+
+.The final result of our WelcomePage
+image::images/tweetapp-welcome-page-final-result.png[]
+
+.WelcomePage.xml
+[source,xml]
+----
+<?xml version="1.0"?>
+<borderAbsolute
+        uiid="WelcomePage"
+        safeArea="true"
+        xsi:noNamespaceSchemaLocation="WelcomePage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <title hidden="true"/>
+    <center layout-constraint="north">
+        <label iconUIID="TwitterIcon" fontIcon="(char)0xe902" ></label>
+    </center>
+
+    <y layout-constraint="center">
+        <spanLabel textUIID="TwitterHeading1">See what's happening in the world right now.</spanLabel>
+        <button uiid="TwitterButton">Create account</button>
+
+    </y>
+
+    <flow layout-constraint="south">
+        <label uiid="TwitterSmallLabel">Have an account already?</label>
+        <button uiid="TwitterSmallLink">Log in</button>
+
+    </flow>
+</borderAbsolute>
+----
+
+.theme.css
+[source,css]
+----
+#Constants {
+    includeNativeBool: true;
+}
+
+@font-face {
+  font-family: 'icomoon';
+  src: url('fonts/icomoon.ttf');
+}
+
+TwitterButton {
+    cn1-derive: Button;
+    background-color: #1DA1F2;
+    color: white;
+    border: cn1-pill-border;
+    padding: 0.7rem;
+}
+
+WelcomePage {
+    padding:10vw;
+    background-color:white;
+}
+
+TwitterHeading1 {
+    font-size: 1.2rem;
+    color: black;
+    margin-bottom: 1rem;
+}
+
+TwitterSmallLabel {
+    cn1-derive: Label;
+    font-size: 0.5rem;
+    padding:0;
+    margin:0;
+    color: #66757f;
+    margin-right: 1mm;
+}
+
+TwitterSmallLink {
+    cn1-derive: Button;
+    font-size: 0.5rem;
+    padding:0;
+    margin:0;
+    color: #1DA1F2;
+}
+
+TwitterIcon {
+    font-family: icomoon;
+    font-size: 1.4rem;
+    color: #1DA1F2;
+}
+----
+
+==== Adapting for Android
+
+But wait, we're not done yet.  So far we've been testing with the _iPhone X_ skin exclusively.  Since we are building our app for multiple platforms, we need to test it on some other skins.  The Codename One simulator comes with skins for many popular phone and tablets on the market.  By default, you'll only see the _iPhoneX_ and desktop skins in the _Skins_ menu.  You can add additional skins via the _Skins_ > _More..._ menu item.
+
+My favourite Android skin is the Samsung Galaxy S8.  If your _Skins_ menu doesn't include this skin yet, then you'll need to add it, as follows.
+
+. Select _Skins_ > _More..._ from the menu bar.
++
+image::images/skins-add-more-menuitem.png[]
++
+It will take a few seconds to load the list of skins.
+. When the _Skins_ dialog appears, enter "GalaxyS" into the search field at the top.  You should see a few matching results appear in the list, as shown below:
++
+image::images/skins-galaxy-search.png[]
++
+NOTE: _SamsungGalaxyS8_ is not included in the screenshot above because I have already installed it, but it should appear in your list.
+. Check the box beside _SamsungGalaxyS8_, and press the _Download_ button.
++
+It will take a few moments, but when it is done, you should see an option for _SamsungGalaxyS8_ in your skins menu.
+
+To test out the app in Android, select the _SamsungGalaxyS8_ skin from the _Skins_ menu.
+
+image::images/select-galaxys8-skin.png[]
+
+It should resemble the screenshot below:
+
+image::images/tweetapp-android-skin-1.png[]
+
+This looks a little different than it did on the iPhoneX skin. All of the text is a little bit too small.
+
+This is because different platforms have different default font sizes, and pixel density also varies across devices.  The best way I have found to _normalize_ these factors and obtain consistent results across platform is to define the `defaultFontSize` theme constant to an appropriate value, and use `rem` units for font sizes whenever possible.
+
+In the `#Constants` section of the _theme.css_ file, add:
+
+[source,css]
+----
+#Constants {
+  ...
+  defaultFontSizeInt: 18;
+}
+----
+
+We are also going to change some of the font sizes so that they look better on the _S8_ skin.
+
+Change the `font-size` properties in a few styles as follows:
+
+[source,css]
+----
+TwitterButton {
+  ...
+  font-size: 1rem;
+}
+
+TwitterHeading1 {
+  ...
+  font-size: 1.5rem;
+}
+
+TwitterSmallLabel {
+  ...
+  font-size: 0.7rem;
+}
+
+TwitterSmallLink {
+  ...
+  font-size: 0.7rem;
+}
+----
+
+After making these changes, the simulator should look something like:
+
+image::images/tweet-app-s8-skin-2.png[]
+
+And if we now toggle back to the iPhone X, it will look like:
+
+image::images/tweetapp-iphonex-skin-final.png[]
+
+These now look a little better.
+
+We may continue to tweak the styles as we go on, but for now, I'd say we can move onto the registration page.
+
+=== The Signup Page
+
+When you click on _Create account_ in the _Twitter_ app, it brings you to the _Signup Page_ which looks like:
+
+image::images/twitter-signup-page.png[]
+
+Create a new file named "SignupPage.xml" in the same directory as the _WelcomePage.xml_ file.
+
+Then add the following contents:
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<border safeArea="true"
+        xsi:noNamespaceSchemaLocation="SignupPage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <title>
+        <label iconUIID="TwitterIcon" fontIcon="(char)0xe902" ></label>
+    </title>
+    <y layout-constraint="center">
+        <label>Create your account</label>
+        <textField hint="Name"/>
+        <textField hint="Phone number or email address"/>
+        <textField hint="Date of birth"/>
+    </y>
+    <right layout-constraint="south">
+        <button>Next</button>
+    </right>
+</border>
+
+----
+
+NOTE: I used `<textField>` tags for all three fields of this form, even though (as we'll discover later) the _birthdate_ field should be a date picker, and the _phone number or email address_ field has more involved than a single _TextField_ component can handle.  Later on we will be revisiting these tag choices, but for now I just want to be able to express the semantic structure of the form using tags.  It will be easy to change them to different components later on if required.
+
+This is just a basic set of components to replicate the contents of the form.  It doesn't include any special styling yet.  There are a couple of things worth noting here:
+
+In the _WelcomePage_ we hid the title bar using `<title hidden="true"/>`.  Since this form has a _back_ button, however, I'd like to use the default title bar so that we can get the _back_ functionality for free.
+
+The `<title>` is a special tag that test the title of the form.  If you provide string contents, then those will be used as the title.  If you provide a child component, as we've done here, it will use that component in the title position.  In this case we want our icon to be placed in the title position.
+
+The `<right>` tag is an alias for a container with `FlowLayout` and aligned to the right.
+
+==== Linking from the Welcome Page
+
+Before we can try out our new _Signup_ page, we need to add a link to it from the _Welcome_ page.  We'll do this by adding a `rad-href` attribute to the _Create account_ button on the _Welcome_ page:
+
+[source,xml]
+----
+<button uiid="TwitterButton" rad-href="#SignupPage">Create account</button>
+----
+
+Now, when you click on the _Create account_ button, it will navigate to our new _Signup_ page, which is shown below:
+
+image::images/tweetapp-signup-page-1.png[]
+
+This is a starting point.
+
+==== Hot Reload: Reload Current Form
+
+Before we begin the process of styling the _Signup_ form, let's change the _Hot Reload_ settings of the simulator to _Reload Current Form_.  This will cause the app to automatically reload the current form when we make changes triggering the hot reload.
+
+image::images/hot-reload-reload-current-form.png[]
+
+NOTE: When the _Reload Current Form_ option is enabled we lose the navigation context on reload, so things like the _Back_ button won't appear.
+
+This mode is helpful while we are actively developing a view.
+
+==== Adding Styles
+
+I won't go through the _styling_ process in as much detail as I did for the _Welcome_ page.  I'll just show you the styles I arrived at by trial and error, and comment on some of the new or non-obvious things.  Add the following styles to your stylesheet:
+
+[source,css]
+----
+
+/** Signup Page Styles */
+
+SignupPage {
+    background-color:white;
+    margin:0;
+}
+
+SignupPageContent {
+    padding: 8vw;
+}
+
+SignupPageTitle {
+    cn1-derive: Label;
+    font-size: 1.2rem;
+    font-family: "native:MainBold";
+    text-align:center;
+    margin-bottom: 1.7rem;
+    color: black;
+}
+
+TwitterNextButton {
+    cn1-derive: Button;
+    background-color: #1DA1F2;
+    color: white;
+    border: cn1-pill-border;
+    padding: 0.5rem 0.75rem;
+
+    font-size: 0.7rem;
+
+}
+
+TwitterTextField, TwitterTextFieldHint {
+    padding-top: 0.7rem;
+    padding-bottom: 0.7rem;
+    font-size: 0.8rem;
+    font-family: "native:MainLight";
+}
+
+TwitterTextField {
+    cn1-derive: TextField;
+    border: none;
+    border-bottom: 0.8pt solid #ccc;
+
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+
+
+}
+
+TwitterTextFieldHint {
+    color: #66757f;
+
+}
+----
+
+And set the UIIDs for the corresponding elements in the _SignupPage_ view:
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<border uiid="SignupPage"
+        safeArea="true"
+        xsi:noNamespaceSchemaLocation="SignupPage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <title>
+        <label iconUIID="TwitterIcon" fontIcon="(char)0xe902" ></label>
+    </title>
+    <y layout-constraint="center" uiid="SignupPageContent">
+        <label uiid="SignupPageTitle">Create your account</label>
+        <textField hint="Name" uiid="TwitterTextField" hintLabel.uiid="TwitterTextFieldHint"/>
+        <textField hint="Phone number or email address" uiid="TwitterTextField" hintLabel.uiid="TwitterTextFieldHint"/>
+        <textField hint="Date of birth" uiid="TwitterTextField" hintLabel.uiid="TwitterTextFieldHint"/>
+    </y>
+    <right layout-constraint="south">
+        <button uiid="TwitterNextButton">Next</button>
+    </right>
+
+
+</border>
+
+----
+
+The things to notice on this snippet are the `uiid` attributes that were added to some of the XML tags.  Notice also that I added `hintLabel.uiid` attributes to the `<textField>` tags.  These are to set the UIID of the _hint_ text and correspond with the _Java_ expression `textField.getHintLabel().setUIID(...)`.  This demonstrates the syntax that you can use to set _sub_-properties via attributes.
+
+TIP: There is no limit to the number of levels of chaining  that you can do with setting sub-properties.  E.g. `a.b.c.d.e="foo"` would be the same as calling, `theComponent.getA().getB().getC().getD().setE(foo)` in Java, except that the code that CodeRAD generates is null-safe.  _However_, not all chaining sequences are included in the XML schemas, so IntelliJ highlight some of your chained attributes in red, claiming that they are invalid.  While this may be annoying (seeing the error message), the view should build just fine.
+
+The result on the Samsung Galaxy S8:
+
+image::images/tweetapp-signup-form-s8-2.png[]
+
+And on iPhone X:
+
+image::images/tweetapp-signup-form-iphonex-2.png[]
+
+==== The Title Bar
+
+We didn't explicitly create the title bar with an XML tag.  Its creation is handled by the `FormController` when the view is displayed.  Therefore we couldn't set a `uiid` attribute to set its style.  This is why it looks a little off color on the iPhoneX, and it has a shadowed bottom border on the S8.
+
+In cases like this, when I need to style a component that I didn't create myself, I generally use the _Component Inspector_ in the simulator to find out the UIID of the "offending" component.  Let's do that now, by selecting _Tools_ > _Component Inspector_:
+
+image::images/tweetapp-component-inspector-menu.png[]
+
+The screenshot below shows the component tree expanded to the _TitleBar_ component.  The component that I select in the component tree is shaded _red_ in the simulator, which helps me to know that I have found the correct component.
+
+image::images/tweetapp-component-inspector-titlearea.png[]
+
+According to the inspector, the UIID of that component is "TitleArea", so let's try to override that style in the stylesheet.
+
+Global overrides like this I usually place near the beginning of the stylesheet.
+
+[source,css]
+----
+TitleArea {
+    border:none;
+    background-color:white;
+    margin:0;
+}
+----
+
+And the result on the S8:
+
+image::images/tweetapp-signup-page-s8-4.png[]
+
+==== The Signup Page Controller
+
+Our next step is to make make the signup page actually do something other than look pretty.  In the spirit of MVC we will handle logic for this form in a _controller_.
+
+Create a _com.example.tweetapp.controllers_ package inside the _src/main/java_ directory if you haven't already, and create a new Java class in this package named "SignupPageViewController" with the following contents:
+
+[source,java]
+----
+package com.example.tweetapp.controllers;
+
+import com.codename1.rad.controllers.Controller;
+import com.codename1.rad.controllers.ViewController;
+
+public class SignupPageViewController extends ViewController {
+    /**
+     * Creates a new ViewController with the given parent controller.
+     *
+     * @param parent
+     */
+    public SignupPageViewController(Controller parent) {
+        super(parent);
+    }
+}
+
+----
+
+Then, back in the _SignupPage.xml_ view, add a `view-controller` attribute to the root XML tag that referrs to the _SignupPageViewController_ class:
+
+[source,xml]
+----
+<border view-controller="com.example.tweetapp.controllers.SignupPageViewController" ... >
+...
+----
+
+==== The "Next" Action
+
+Now that we have our view controller in place, let's convert the _Next_ button into a _Next_ action - the distinction being that an action is _bound_ to the controller.
+
+First we need to add an action category for the _Next_ action.  We do this via the `<define-category>` tag:
+
+[source,xml]
+----
+<define-category name="NEXT"/>
+----
+
+TIP: If the `<define-category>` tag is new to you, you should check out <<adding-actions>> in the _Getting Started_ section for a brief introduction to actions and categories.
+
+And we'll bind our _Next_ button to this _NEXT_ category using the `<bind-action>` tag, which we'll add as a child of the `<button>` tag:
+
+[source,xml]
+----
+<button uiid="TwitterNextButton" text="Next">
+    <bind-action category="NEXT"/>
+</button>
+----
+
+Notice we moved the "Next" text from the tag content into the `text` attribute.  This is just cleaner to look at now that we have some child tags.
+
+NOTE: When `<bind-action>` is added to a `<button>`, properties defined in the action will override the corresponding button properties.  E.g. If the action included a `label` property, then that would override the `text` attribute of the `button`.
+
+Now to define the _Next_ action in the controller.
+
+Implement the `initControllerActions()` method in the view controller as follows:
+
+[source,java]
+----
+@Override
+protected void initControllerActions() {
+    super.initControllerActions();
+
+    ActionNode.builder()
+            .addToController(this, SignupPage.NEXT, evt->{
+                evt.consume();
+                Dialog.show("Click recieved", "You clicked Next", "OK", null);
+            });
+}
+----
+
+The `ActionNode.builder()` method creates an `ActionNode.Builder` object, which has many utility methods for constructing actions and registering them with controllers.
+
+The `addToController()` method takes three parameters:
+
+. The controller to add the action to.  In this case we pass `this` since we want to add it to this view controller.
+. The Action Category.  In this case we are passing `SignupPage.NEXT` which was generated by our `<define-category name="NEXT"/>` tag.
+. An `ActionListener` that is called when the action is triggered.  In this case we just display a dialog that says "You Clicked Me".
+
+If you reload the app in simulator and press the "Next" button, it should display a dialog as shown here:
+
+.Dialog shown when clicking the _Next_ button on Android.  Notice that this dialog uses the native Android styles.  On iOS the dialog would look slightly different - matching the iOS native theme.
+image::images/tweetapp-next-you-clicked-me-android.png[]
+
+==== The View Model
+
+Now, when the user clicks _Next_ it triggers the corresponding event handler in our controller, but we haven't provided a "clean" way, yet, to pass the user's input to our controller action.  This is where the _view model_ comes into play.
+
+The _View Model_ is the entity object that stores all of the model data for a view.  If you do not explicity specify a view model for your view (via the `rad-model` attribute), then an Entity class is automatically generated by the CodeRAD annotation processor, named `{ViewName}Model`.  E.g. For our `SignupPage` view, the generated entity class would be named `SignupPageModel`, and it would be in the same package as the `SignupPage` view.
+
+You can define properties for the view model using the `<define-tag>` tag, as described in <<implicit-view-models>>.
+
+In our case, we are going to add properties for each field on the form.
+
+Add the following to the _SignupPage.xml` view anywhere inside the root tag. I generally place my `define-tag` tags near the top.
+
+[source,xml]
+----
+<define-tag name="name" value="Person.name"/>
+<define-tag name="phone" value="Person.telephone"/>
+<define-tag name="email" value="Person.email"/>
+<define-tag name="birthDate" value="Person.birthDate" type="java.util.Date"/>
+----
+
+A few things to note here:
+
+. I have provided a `value` attribute for each of these tags because these properties seem to match up directly with well-known property types.  CodeRAD includes a set of default schemas in the _com.codename1.rad.schemas_ directory which are adapted from the schemas listed at https://schema.org/.  In particular the https://schema.org/Person[Person schema] seems relevant here. By mapping our properties to these existing properties, it will make it easier for other views to use our view model without having to explicitly depend on the view model entity itself. See <<entities-properties-schemas-tags>> for some more information about this.
+. For the `birthDate` tag we have added a type of `java.util.Date`.  If no type is required, the property is assumed to be a string.  Since the _birthDate_ is a date, we want the model to treat this property as a date.
+. I have split up the "Phone or Email Address" field into two properties: _phone_ and _email_.  This is just cleaner.  Also, as we'll see, the _Phone or Email_ field of the Twitter app isn't really a _single_ text field at all.  It is more like a button that toggles between two different possible text fields: phone and email.
+
+==== Binding UI Elements to the View Model
+
+Now that we have a view model in place, we can bind our UI elements to the model.  This will involve changing the `<textField>` tags that we are currently using to their "bindable" counterparts.  We will also take this opportunity to split up the "Phone or Email" field up into two fields.
+
+CodeRAD includes a set of bindable wrappers for most of the core Codename One components in the _com.codename1.rad.propertyviews_ package.  To convert a basic Codename One component to its bindable counterpart, you can generally prefix "rad" to the tag name.  E.g. Instead of `<textField>`, you can use `<radTextField>`.
+
+A slight wrinkle is that the `<rad*>` components are actually `Container` classes that _wrap_ the basic component, so if you want to set properties on the basic component such as "hint" or "uiid", you need to set them with the "component." prefix.
+
+For example, let's convert the _name_ text field into its RAD counter part.  Before we had:
+
+[source,xml]
+----
+<textField
+  hint="Name"
+  uiid="TwitterTextField"
+  hintLabel.uiid="TwitterTextFieldHint"
+/>
+----
+
+We change this to:
+
+[source,xml]
+----
+<radTextField
+  tag="name"
+  component.hint="Name"
+  component.uiid="TwitterTextField"
+  component.hintLabel.uiid="TwitterTextFieldHint"
+/>
+----
+
+Notes on this:
+
+. The `tag="name"` binds this component to the "name" property of the view model that we defined above using `<define-tag../>`.
+. We prefixed each of the attributes that target the _TextField_ itself with "component."  This is beause the TextField itself is actually wrapped by the `radTextField` (which is an instance of `TextFieldPropertyView`), and the rad text field class has a `getComponent()` method that retrieves the actual text field.  So, for example, setting `component.hint="Name"` is like calling `radTextField.getComponent().setHint("Name")`.
+
+===== Splitting the _Phone or Email_ Field
+
+In our initial design we used a single text field for _Phone or Email_ to match what the Twitter form looked like.  If we dig a little deeper into the behaviour of this field, however, it looks like there is more than meets the eye.
+
+If you tap on the _Phone or Email_ field in the actual _Twitter_ app, you'll notice that the field hint changes to just "Phone", and it provides you with a button to "Use email instead".
+
+image::images/tweet-app-twitter-phone-field.png[]
+
+If you click on the _Use email instead_ button, it will toggle the field to an "Email" field, and the keyboard layout will change to one that is appropriate for entering email addresses.
+
+There a few different ways that we could replicate this behaviour.  In the approach that I chose, I split the field into a button and two text fields.
+
+The button with label "Phone number or email address" is styled like a text field, and is displayed initially.  The two text fields (for phone and email respectively) are hidden initially.  When the user presses the button, it triggers a change that hides the button and shows the _Phone_ field, and the _Use email instead_ button.  If the user presses the _Use email instead_ button, it hides the _Phone_ field and displays the _Email_ field.
+
+The following is what I ended up with for these three components:
+
+[source,xml]
+----
+
+<!-- Define some additional properties on the view model to help
+    track state. -->
+
+<!-- useEmail tracks if the user has opted to use their email address
+    instead of phone. -->
+<define-tag name="useEmail" type="boolean"/>
+
+<!-- editingPhoneOrEmail is to be set when the user presses the
+    "Phone or Email" button initially. -->
+<define-tag name="editingPhoneOrEmail" type="boolean"/>
+
+<!-- phoneFieldFocused tracks whether the phone field currently has focus -->
+<define-tag name="phoneFieldFocused" type="boolean"/>
+
+<!-- emailFieldFocused tracks whether the email field currently has focus -->
+<define-tag name="emailFieldFocused" type="boolean"/>
+
+<button uiid="PhoneOrEmailButton"
+    text="Phone number or email address"
+    bind-hidden="${editingPhoneOrEmail}.bool"
+>
+    <script>
+
+        it.addActionListener(evt -> {
+            evt.consume();
+            it.getComponentForm().setFormBottomPaddingEditingMode(true);
+            ${editingPhoneOrEmail}.setBoolean(true);
+            if (${useEmail}.bool) {
+                emailTextField.getComponent().startEditingAsync();
+            } else {
+                phoneTextField.getComponent().startEditingAsync();
+            }
+        });
+    </script>
+</button>
+
+<radTextField
+        rad-var="phoneTextField"
+        tag="phone"
+        bind-component.focus="phoneFieldFocused"
+        bind-hidden="${useEmail}.bool || !${editingPhoneOrEmail}.bool"
+        component.hint="Phone number"
+        component.uiid="TwitterTextField"
+        component.hintLabel.uiid="TwitterTextFieldHint"
+        component.constraint="TextArea.PHONENUMBER"
+/>
+
+<radTextField
+        rad-var="emailTextField"
+        bind-hidden="!${useEmail}.bool || !${editingPhoneOrEmail}.bool"
+        tag="email"
+        component.hint="Email address"
+        component.uiid="TwitterTextField"
+        component.hintLabel.uiid="TwitterTextFieldHint"
+        component.constraint="TextArea.EMAILADDR"
+        bind-component.focus="emailFieldFocused"
+>
+
+</radTextField>
+----
+
+There's a fair bit here to unpack, so bear with me.  Let's start with the new `<define-tag>` tags.  In order to replicate the funcionality of the twitter form, I need to create some different states for the form to be in.  The easiest way to do that is to add some properties to the model to keep track of this state.  Then we can bind the UI components to these model properties to have them appear and disappear according to the state of the model.  We'll see how these properties are used in a a moment, but first let's look at the UI components, starting with the button.
+
+The `uiid="PhoneOrEmailButton"` on the `<button>` tag is a style that makes the button look like a text field.  We define this style in our stylesheet as follows:
+
+[source,css]
+----
+PhoneOrEmailButton {
+    cn1-derive: TwitterTextField;
+    color: gray;
+}
+----
+
+The `cn1-derive` directive ensures that it inherits all of the styles from the `TwitterTextField` style.  And we set the text color to gray.
+
+The `bind-hidden="${editingPhoneOrEmail}.bool"` attribute binds the _hidden_ property of the button to the _editingPhoneOrEmail_ property of the view model.
+
+NOTE: The `${editingPhoneOrEmail}.bool` string is a RAD View macro for accessing a model property.  This is roughly equivalent to the Java expression `getEntity().getBoolean(entityPhoneOrEmail)`.
+
+Since the _editingPhoneOrEmail_ property starts out as false, which means that the _hidden_ property of the button will initially be `false` (i.e. it will be initially visible).
+
+We _set_ the _editingPhoneOrEmail_ property in the action listener for the button which we defined inside a `<script>` tag.
+
+NOTE: Later on we may clean things up by moving this logic into the controller, but for now, and for simplicity, we place this code inside the view directly.
+
+Let's take a closer look at this script tag, as there are few things worth comment here:
+
+[source,xml]
+----
+<script>
+    // setFormBottonPaddingEditingMode affects mobile device
+    // keyboard behaviour.
+
+    it.addActionListener(evt -> {
+        evt.consume();
+        it.getComponentForm().setFormBottomPaddingEditingMode(true);
+        ${editingPhoneOrEmail}.setBoolean(true);
+        if (${useEmail}.bool) {
+            emailTextField.getComponent().startEditingAsync();
+        } else {
+            phoneTextField.getComponent().startEditingAsync();
+        }
+    });
+</script>
+----
+
+This Java code is executed inside the context of the view, and it provides an execution context with a few default variables available.  The `it` variable is a reference to the component that "contains" the script tag.  In this case it is the `<button>` tag (which is a _Button_ object).
+
+
+
+`it.addActionListener(evt->{...})`  adds a listener to be called when the button is clicked.
+
+`it.getComponentForm().setFormBottomPaddingEditingMode(true);` affects the behaviour on devices with a virtual keyboard (e.g. Android and iOS).  The default behaviour is for the keyboard to cover up part of the form, but in this form, we want the "Use email instead" button to still be visible when the keyboard is showing.  When `setFormBottomPaddingEditingMode(true)` is called on the form, it will cause the form to shrink when the keyboard appears so that the bottom buttons will still be visible.
+
+We call this inside the `<script>` tag because we don't have direct access to the `Form` object from our View.
+
+`${editingPhoneOrEmail}.setBoolean(true)` sets the _editingPhoneOrEmail_ property of the view model, which will trigger some state updates in the view. This will result in the the button being hidden because of its `bind-hidden` attribute.  This also results in the _phone_ field being displayed because of its `bind-hidden` attribute:
+
+[source,xml]
+----
+<radTextField
+        ...
+        bind-hidden="${useEmail}.bool || !${editingPhoneOrEmail}.bool"
+        ...
+/>
+----
+
+The final part of the _actionListener_ is the call to `emailTextField.getComponent().startEditingAsync()` on either the _phone_ or _email_ field, depending on whether the view model's _useEmail_ property is `true`.  This will focus the field and open the virtual keyboard.
+
+TIP: You might be wondering where the _emailTextField_ variable comes from, and what it refers to.  Notice that the _email_ field includes an attribute `rad-var="emailTextField"`.  This creates a variable reference to this `radTextField` tag's component object, which is a `TextFieldPropertyView` object.  You can add a `rad-var` attribute to any tag to make it accessible inside `<script>` tags and other java expressions inside the view.
+
+**Moving onto the _phone_ field:**
+
+[source,xml]
+----
+<radTextField
+        rad-var="phoneTextField"
+        tag="phone"
+        bind-component.focus="phoneFieldFocused"
+        bind-hidden="${useEmail}.bool || !${editingPhoneOrEmail}.bool"
+        component.hint="Phone number"
+        component.uiid="TwitterTextField"
+        component.hintLabel.uiid="TwitterTextFieldHint"
+        component.constraint="TextArea.PHONENUMBER"
+/>
+----
+
+The first thing to notice here is that we are using the `radTextField` tag instead of `textField`.  This allows the field's text to be bound to the view model's _phone_ property.  This binding is expressed by the `tag="phone"` attribute.
+
+Since `radTextField` is actually a _Container_ that wraps a _TextField_, and the _TextField_ component is available via the _getComponent()_ method, we prefix attributes that should be applied on the _TextField_ component with `component`.  E.g.
+
+----
+....
+component.hint="Phone number"
+component.uiid="TwitterTextField"
+component.hintLabel.uiid="TwitterTextFieldHint"
+component.constraint="TextArea.PHONENUMBER"
+....
+----
+
+`bind-component.focus="phoneFieldFocused"` binds the "focus" state of the text field with the _phoneFiledFocused_ view model property.  We do this so that the _Use email instead_ button can bind its _hidden_ property to this variable and only be shown when the phone field is focused.
+
+IMPORTANT: We used the literal _phoneFieldFocused_ tag name as the attribute value here instead of using the view macro expression `${phoneFieldFocused}` like we used in other _bind_ attributes.  This is because providing the _literal_ tag name to a bind expression allows the binding to be _two-way_.  When using the `${...}` macro syntax, the value is treated like Java expression which can be evaluated, but cannot be "modified" - i.e. would only result in a one-way binding.
+
+The _email_ field properties are very similar to the _phone_ field, so I won't discuss them here.
+
+===== Toggling Beween Phone and Email
+
+Finally, we need to add the buttons to toggle bewteen the _email_ and the _phone_ fields.
+
+The following is a snippet from the view that defines these buttons, which I added into the _south_ part of the view:
+
+[source,xml]
+----
+<x layout-constraint="west">
+    <button text="Use Email Address"
+            bind-hidden="!${phoneFieldFocused}.bool"
+            uiid="TextFieldToggleButton"
+    >
+        <script>
+            it.addActionListener(evt->{
+               ${useEmail}.setBoolean(true);
+                emailTextField.getComponent().startEditingAsync();
+            });
+        </script>
+    </button>
+
+
+    <button text="Use Phone"
+            bind-hidden="!${emailFieldFocused}.bool"
+            uiid="TextFieldToggleButton"
+    >
+        <script>
+            it.addActionListener(evt->{
+                ${useEmail}.setBoolean(false);
+                phoneTextField.getComponent().startEditingAsync();
+            });
+        </script>
+    </button>
+</x>
+----
+
+These buttons both include a `bind-hidden` attribute which bind the view model's corresponding _xxxFieldFocused_ properties.  The result is that both of these buttons are hidden by default, but will be shown when their corresponding text field is focused.  This matches the behaviour of the actual Twitter app.
+
+Both of these buttons also include `<script>` tags to add action listeners which toggle the _useEmail_ model property on and off, which triggers the _hidden_ bindings of the _email_ and _phone_ `<radTextField>` tags to be re-evaluated.
+
+===== The _Date of birth_ Field
+
+For the _Date of Birth_ field we will use a `<radDatePicker>` tag, which creates a `PickerPropertyView` component, which wraps the `Picker` component, and adds some enhanced _binding_ support.
+
+[source,xml]
+----
+<radDatePicker
+        tag="birthDate"
+        component.text="Date of birth"
+        component.uiid="TwitterDatePicker"
+/>
+----
+
+After the complexities faced with the _phone and email_ field, this one is tame.  The `tag="birthDate"` attribute binds the picker value to the view model's _birthDate_ proeprty.  We use `component.uiid="TwitterDatePicker"` which we defined as:
+
+[source,css]
+----
+TwitterDatePicker {
+    cn1-derive: TwitterTextField;
+    color: gray;
+}
+----
+
+Like the _Phone or Email_ button we created before, we style this picker to look like a text field.
+
+==== The Result
+
+Now that I've gone through all of the individual pieces of the _Signup Form_, let's take a look at the result.
+
+First the source so far:
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<border view-controller="com.example.tweetapp.controllers.SignupPageViewController"
+        uiid="SignupPage"
+        safeArea="true"
+        xsi:noNamespaceSchemaLocation="SignupPage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <define-category name="NEXT"/>
+    <define-category name="USE_PHONE"/>
+    <define-category name="USE_EMAIL"/>
+    <define-category name="ENTER_PHONE_OR_EMAIL"/>
+
+    <define-tag name="name" value="Person.name"/>
+    <define-tag name="phone" value="Person.telephone"/>
+    <define-tag name="email" value="Person.email"/>
+    <define-tag name="birthDate" value="Person.birthDate" type="java.util.Date"/>
+
+    <define-tag name="useEmail" type="boolean"/>
+    <define-tag name="editingPhoneOrEmail" type="boolean"/>
+    <define-tag name="phoneFieldFocused" type="boolean"/>
+    <define-tag name="emailFieldFocused" type="boolean"/>
+
+    <title>
+        <label iconUIID="TwitterIcon" fontIcon="(char)0xe902" ></label>
+    </title>
+    <y layout-constraint="center" uiid="SignupPageContent" scrollableY="true">
+        <label uiid="SignupPageTitle">Create your account</label>
+        <radTextField
+                tag="name"
+                component.hint="Name"
+                component.uiid="TwitterTextField"
+                component.hintLabel.uiid="TwitterTextFieldHint"
+        />
+
+
+        <button uiid="PhoneOrEmailButton"
+            text="Phone number or email address"
+                bind-hidden="${editingPhoneOrEmail}.bool"
+
+        >
+            <script>
+
+
+
+            it.addActionListener(evt -> {
+                evt.consume();
+                it.getComponentForm().setFormBottomPaddingEditingMode(true);
+                ${editingPhoneOrEmail}.setBoolean(true);
+                if (${useEmail}.bool) {
+                    emailTextField.getComponent().startEditingAsync();
+                } else {
+                    phoneTextField.getComponent().startEditingAsync();
+                }
+            });
+            </script>
+        </button>
+
+        <radTextField
+                rad-var="phoneTextField"
+                tag="phone"
+                bind-component.focus="phoneFieldFocused"
+                bind-hidden="${useEmail}.bool || !${editingPhoneOrEmail}.bool"
+                component.hint="Phone number"
+                component.uiid="TwitterTextField"
+                component.hintLabel.uiid="TwitterTextFieldHint"
+                component.constraint="TextArea.PHONENUMBER"
+        />
+
+        <radTextField
+                rad-var="emailTextField"
+                bind-hidden="!${useEmail}.bool || !${editingPhoneOrEmail}.bool"
+                tag="email"
+                component.hint="Email address"
+                component.uiid="TwitterTextField"
+                component.hintLabel.uiid="TwitterTextFieldHint"
+                component.constraint="TextArea.EMAILADDR"
+                bind-component.focus="emailFieldFocused"
+        >
+
+        </radTextField>
+
+
+        <radDatePicker
+                tag="birthDate"
+                component.text="Date of birth"
+                component.uiid="TwitterDatePicker"
+        />
+    </y>
+    <border layout-constraint="south" uiid="SignupPageSouth">
+        <x layout-constraint="west">
+            <button text="Use Email Address"
+                    bind-hidden="!${phoneFieldFocused}.bool"
+                    uiid="TextFieldToggleButton"
+            >
+                <script>
+                    it.addActionListener(evt->{
+                       ${useEmail}.setBoolean(true);
+                        emailTextField.startEditingAsync();
+                    });
+                </script>
+            </button>
+
+
+            <button text="Use Phone"
+                    bind-hidden="!${emailFieldFocused}.bool"
+                    uiid="TextFieldToggleButton"
+            >
+                <script>
+                    it.addActionListener(evt->{
+                        ${useEmail}.setBoolean(false);
+                        phoneTextField.startEditingAsync();
+                    });
+                </script>
+            </button>
+        </x>
+        <x layout-constraint="east">
+            <button  uiid="TwitterNextButton" text="Next">
+                <bind-action category="NEXT"/>
+            </button>
+        </x>
+
+    </border>
+
+
+</border>
+----
+
+And the CSS we added for the Signup page:
+
+[source,css]
+----
+/** Signup Page Styles */
+
+SignupPage {
+    background-color:white;
+    margin:0;
+}
+
+SignupPageContent {
+    padding: 8vw;
+}
+
+SignupPageSouth {
+    padding:2mm;
+    padding-left: 8vw;
+    padding-right: 8vw;
+    margin:0;
+    border-top: 1px solid gray;
+}
+
+SignupPageTitle {
+    cn1-derive: Label;
+    font-size: 1.2rem;
+    font-family: "native:MainBold";
+    text-align:center;
+    margin-bottom: 1.7rem;
+    color: black;
+}
+
+TwitterNextButton {
+    cn1-derive: Button;
+    background-color: #1DA1F2;
+    color: white;
+    border: cn1-pill-border;
+    padding: 0.5rem 0.75rem;
+
+    font-size: 0.7rem;
+    margin-right: 0;
+
+}
+
+TwitterTextField, TwitterTextFieldHint {
+    padding-top: 0.7rem;
+    padding-bottom: 0.7rem;
+    font-size: 0.8rem;
+    font-family: "native:MainLight";
+    color: gray;
+}
+
+TwitterTextField {
+    cn1-derive: TextField;
+    border: none;
+    border-bottom: 0.8pt solid #ccc;
+    color: #333333;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+TwitterDatePicker {
+    cn1-derive: TwitterTextField;
+    color: gray;
+}
+
+PhoneOrEmailButton {
+    cn1-derive: TwitterTextField;
+    color: gray;
+}
+
+TwitterTextFieldHint {
+    color: #66757f;
+
+}
+
+TextFieldToggleButton {
+    cn1-derive: Button;
+    color: #1DA1F2;
+    border: none;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.7rem;
+    margin:0;
+}
+
+----
+
+And some screenshots from the simulator:
+
+image::images/tweetapp-signup-form-complete-simulator.png[]
+
+I have also prepared a short screencast on one of my Android devices to show how it looks on an actual device:
+
+video::RFteZABnI-g[youtube, width=440, height=800]
+
+==== Handling Form Submission
+
+Now that our form looks correct, we can return to the _Next_ action that we started a few sections back.  Open the _SignupFormViewController_ class that we created, and create a new method to handle the form submission:
+
+[source,java]
+----
+private void handleSubmit(ActionNode.ActionNodeEvent evt) {
+
+}
+----
+
+And change the `initControllerActions()` method to have the _Next_ action trigger our `handleSubmit()` method instead of the anonymous callback it currently triggers.
+
+[source,java]
+----
+@Override
+protected void initControllerActions() {
+    super.initControllerActions();
+    ActionNode.builder()
+            .addToController(this, SignupPage.NEXT, this::handleSubmit);
+}
+----
+
+===== Field Validation
+
+The first thing we need to do, when handling the registration request, is validate the user's field input.  If validation fails, then an error message should be displayed near the relevant field.  A nice way to achieve this is to create view model properties corresponding to each input field of the signup form to store error messages.  Then we can add labels to the view that are bound to these error messages.
+
+We define the view model properties in our view as follows:
+
+[source,xml]
+----
+<!-- Properties for error messages -->
+<define-tag name="nameErrorMessage"/>
+<define-tag name="phoneOrEmailErrorMessage"/>
+<define-tag name="birthDateErrorMessage"/>
+----
+
+For the error message labels we will use `<radLabel>` components so that they can be bound to the view model easily.  They will be placed just below their corresponding input field in the view.
+
+Let's take a look at the _nameErrorMessage_ label first:
+
+[source,xml]
+----
+
+<!-- Placed just after the "name" field -->
+
+<radLabel tag="nameErrorMessage"
+    bind-hidden="${nameErrorMessage}.isEmpty()"
+          rad-transition="hidden 0.3s"
+          component.uiid="FieldErrorMessage"
+/>
+----
+
+The `tag` attribute binds this to the _nameErrorMessage_.  The `bind-hidden` attribute ensures that this label is hidden when the _nameErrorMessage_ property is empty.  The `rad-transition` attribute causes the label to transition in when it is displayed, rather than just abruptly appear.  Finally we assigned the UIID "FieldErrorMessage" to the label via the `component.uiid` attribute.
+
+TIP: Recall that the `<radLabel>` tag is a `LabelPropertyView` instance, which is a container that wraps a `Label` instance.  The `Label` instance is accessible via the `getComponent()` method, hence the `component.` prefix to the UIID, because we want to style the actual `Label`, and not the property view container.
+
+I have defined the _FieldErrorMessage_ style in the stylesheet as follows:
+
+[source,css]
+----
+FieldErrorMessage {
+    cn1-derive: Label;
+    font-size: 0.7rem;
+    color: white;
+    background-color:red;
+    padding: 1.5mm;
+    margin-top: 0;
+}
+----
+
+I have also removed the bottom margin from the _TwitterTextField_ style so that the error message will be rendered just underneath the corresponding field.
+
+[source,css]
+----
+TwitterTextField {
+   ...
+  margin-bottom: 0.5mm;
+}
+----
+
+
+With these in place, let's return to the `handleSubmit()` method, and implement some validation.
+
+[source,java]
+----
+private void handleSubmit(ActionNode.ActionNodeEvent evt) {
+    // Get reference to the view's model via the event.
+    SignupPageModel viewModel = SignupPageModelWrapper.wrap(evt.getEntity());
+
+    // Do some validation
+    boolean failedValidation = false;
+    if (viewModel.isUseEmail() && NonNull.empty(viewModel.getEmail())) {
+        viewModel.setPhoneOrEmailErrorMessage("Email address cannot be empty");
+        failedValidation = true;
+    } else if (!viewModel.isUseEmail() && NonNull.empty(viewModel.getPhone())) {
+        viewModel.setPhoneOrEmailErrorMessage("Phone cannot be empty");
+        failedValidation = true;
+    } else {
+        viewModel.setPhoneOrEmailErrorMessage("");
+    }
+
+    if (NonNull.empty(viewModel.getName())) {
+        viewModel.setNameErrorMessage("Name cannot be empty");
+        failedValidation = true;
+    } else {
+        viewModel.setNameErrorMessage("");
+    }
+
+    if (NonNull.empty(viewModel.getBirthDate())) {
+        viewModel.setBirthDateErrorMessage("Birthdate cannot be empty");
+        failedValidation = true;
+    } else {
+        viewModel.setBirthDateErrorMessage("");
+    }
+
+    if (failedValidation) {
+        return;
+    }
+}
+----
+
+The first thing we do here is obtain a reference to the view model with this line:
+
+[source,java]
+----
+SignupPageModel viewModel = SignupPageModelWrapper.wrap(evt.getEntity());
+----
+
+This uses both the `SignupViewModel` entity interface, and the `SignupViewModelWrapper` class, which implements `SignupViewModel`.  Both of these are generated by the CodeRAD annotation processor.  Wrapper classes are generated for each RAD entity (i.e. view model) that you define.  This class enables you to wrap _any_ Entity so that it can be be interacted with via the `SignupViewModel` interface.
+
+TIP: Using this wrapper is not strictly necessary, but it handy as it allows you to use, for example `entity.getName()` instead of `entity.getText(name)`, which _feels_ more natural in Java.
+
+Our validator is very basic right now - only checking for empty values.  If it finds a "problem", it sets the relevant `xxxErrorMessage` property on the view model that we just created.  Setting these view model properties will instantly trigger updates in the view.
+
+Now, if we click _Next_ on our form without entering any data we see something like:
+
+image::images/tweetapp-signup-page-error-messages.png[]
+
+.A video showing the transitions when showing and hiding the error messages.
+video::wWWPEgN9D1E[youtube, width=440, height=800]
+
+
+===== Sending Signup Request to the Server
+
+Once the form input is validated, we can build a request to send to the server.   We will create a _service_ class to encapsulate all interaction with the server.
+
+NOTE: For the purpose of this tutorial, we won't be connecting to an actual server.  We will just mock these requests.  The API will be designed to be fully asynchronous, however, so that modifying the implementation to make network requests should be straight forward.
+
+Create a new Java package named `com.example.tweetapp.services`, and create a new class named `TweetAppClient` inside this package.  Add the following contents:
+
+[source, java]
+----
+package com.example.tweetapp.services;
+
+import com.codename1.rad.util.NonNull;
+import com.codename1.util.AsyncResource;
+
+import java.util.Date;
+
+/**
+ * A client for interacting with the server.
+ */
+public class TweetAppClient {
+
+    /**
+     * Flag to indicate that we are currently logged in.
+     */
+    private boolean loggedIn;
+
+    /**
+     * The currently logged in user Id.  In this mock implementation the user Id
+     * is just the email address or phone number.
+     */
+    private String loggedInUserId;
+
+    public boolean isLoggedIn(){
+        return loggedIn;
+    }
+
+    public String getLoggedInUserId() {
+        return loggedInUserId;
+    }
+
+
+    /**
+     * A response object that is passed to the SignupRequest callback
+     * upon completion.
+     */
+    public static class SignupResponse {
+        /**
+         * Whether the signup was successful
+         */
+        private boolean success;
+
+        /**
+         * Reference to request that this response is for.
+         */
+        private SignupRequest request;
+
+        /**
+         * The response code.  200 for success.
+         * Make up error codes to fit needs.
+         */
+        private int responseCode;
+
+        /**
+         * A message related to the response code.  Contains error message
+         * in case of errors.
+         */
+        private String message;
+
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public SignupRequest getRequest() {
+            return request;
+        }
+
+        public int getResponseCode() {
+            return responseCode;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+
+
+    }
+
+    /**
+     * Encapsulates a signup request to send to the server.  Modify this
+     * class to include the information you require in your signup process.
+     *
+     */
+    public  class SignupRequest extends AsyncResource<SignupResponse> {
+        /**
+         * The email address of the user.
+         */
+        private String email,
+        /**
+         * The phone number of the user.
+          */
+        phone,
+
+        /**
+         * The name of the user.
+         */
+        name;
+
+        /**
+         * The birth date of the user.
+         */
+        private Date birthDate;
+
+        /**
+         * Send the signup request.
+         * @return
+         */
+        public SignupRequest signup() {
+            return TweetAppClient.this.signup(this);
+        }
+
+        public SignupRequest email(String email) {
+            this.email = email;
+            return this;
+        }
+
+        public SignupRequest phone(String phone) {
+            this.phone = phone;
+            return this;
+        }
+
+        public SignupRequest birthDate(Date birthDate) {
+            this.birthDate = birthDate;
+            return this;
+        }
+
+        public SignupRequest name(String name) {
+            this.name = name;
+            return this;
+        }
+
+    }
+
+    /**
+     * Creates a new signup request.
+     * @return
+     */
+    public SignupRequest createSignupRequest() {
+        return new SignupRequest();
+    }
+
+    /**
+     * Sends a signup request to the server.
+     * @param request
+     * @return
+     */
+    private SignupRequest signup(SignupRequest request) {
+
+        // This is just mocking the signup process.
+        // Change this to contact the server and sign up.
+        SignupResponse response = new SignupResponse();
+        response.responseCode = 200;
+        response.message = "Success";
+        response.request = request;
+        response.success = true;
+        request.complete(response);
+
+        // To log in we set the loggedInUserId and loggedIn
+        // boolean flag.
+        loggedInUserId = NonNull.nonNull(request.email, request.phone);
+        loggedIn = true;
+        return request;
+    }
+}
+
+----
+
+NOTE: To simplify things, this class _automatically_ sets the _loggedIn_ flag when a successful response is received from the "server".  In a real app, we would probably have a multi-step registration process that would require the user to respond to a confirmation email or phone text message, but that is beyond the scope of this tutorial.
+
+We will use a single instance of this class in our application, which we will create inside the `onStartController()` method of our application delegate class (i.e. the `com.example.tweetapp.Tweetapp` class).
+
+[source, java]
+----
+@Override
+protected void onStartController() {
+    super.onStartController();
+
+    /**
+     * Add a TweetAppClient as a lookup so that it will be available throughout
+     * the app via {@link #lookup(Class)}
+     */
+    addLookup(new TweetAppClient());
+}
+----
+
+What this does is add the client as a _lookup_ in the application controller.  We can retrieve this object from this controller, or _any_ if its child controllers, via `lookup(TweetAppClient.class)`.  We can also access it from a RAD view using `<var name="someVariableName" lookup="TweetAppClient"/>`.  This has the same effect as using the classic _Singleton_ design pattern, or a static global, except that we don't have to employ static variables, which are generally considered to be "bad" practice.
+
+In this case we are adding the lookup in the application controller so its _scope_ is the entire app.  If we were to add the lookup inside a FormController, or ViewController, then its scope would be limited to just that controller and its children.
+
+Now, let's use this class from our `handleSubmit()` method (in the _SignupPageViewController_ class) to submit a signup request to the server:
+
+[source,java]
+----
+private void handleSubmit(ActionNode.ActionNodeEvent evt) {
+    // ... Validation code omitted here for clarity
+
+    // Get reference to the webservice client
+    TweetAppClient client = lookup(TweetAppClient.class);
+
+    TweetAppClient.SignupRequest request = client.createSignupRequest()
+            .name(viewModel.getName())
+            .birthDate(viewModel.getBirthDate());
+
+    if (viewModel.isUseEmail()) {
+        request.email(viewModel.getEmail());
+    } else {
+        request.phone(viewModel.getPhone());
+    }
+
+    InfiniteProgress progess = new InfiniteProgress();
+    Dialog progressDialog = progess.showInfiniteBlocking();
+    request.signup().onResult((res, err) -> {
+        progressDialog.dispose();
+        if (err != null) {
+            ToastBar.showErrorMessage(err.getMessage());
+            return;
+        }
+        new HomePageController(getApplicationController()).show();
+
+    });
+}
+----
+
+Notice that we obtain a reference to the `TweetAppClient` object via `lookup(TweetAppClient.class)`.
+
+We then create a Signup request via `client.createSignupRequest()`.
+
+Then we set some properties on the request using the appropriate values obtained from the view model.
+
+The `InfiniteProgress` class is used to display a _progress_ indicator and block the UI while the signup request is in progress.
+
+The _actual_ server request is initiated by the `request.signup()` call, and the `onResult()` method allows us to add a callback which will be executed when a response is received.
+
+Upon receiving a response, we call `progressDialog.dispose()` to hide the progress indicator.  Then we check if there was an error, in which case we used `ToastBar.showErrorMessage(...)` to display an error message in the UI.
+
+If there was no error, then we assume the signup was successful and we direct the user to the _HomePage_.
+
+In order for this code to work, we need to create a new view named HomePage.xml.  To start with just include some placeholder contents:
+
+. HomePage.xml
+[source,xml]
+----
+<?xml version="1.0"?>
+<y xsi:noNamespaceSchemaLocation="HomePage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <title>Homepage</title>
+</y>
+----
+
+TIP: The _HomePageController_ class is a _FormController_ subclass that is generated by the CodeRAD annotation processor for the _HomePage_ view.  It is just a convenience class that makes it easier to display the _HomePage_ view in a form.
+
+One important thing to notice about our call to `HomePageController` is that we set the _Application Controller_ as its parent controller rather than the current controller.
+
+If we had done:
+
+[source,java]
+----
+new HomePageController(this).show();
+----
+
+then the _HomePage_ would be a _child_ of the current form (the _Signup_ form), and thus would include a "back" button to return.  We don't want the user to be able to navigate back to the signup form once they are logged in, so we make the _HomePageController_ a child of the application controller, making it a "root" form controller in the application.
+
+We'll leave the placeholder content in the "HomePage" for now, as we complete the _Login_ and _About_ pages.  Once we finish all of our "pre-login" views, we'll return to the _HomePage_ view to create the "logged in" app experience.
+
+TIP: You can view the current state (as of this point in the tutorial) of all of our source files in https://gist.github.com/shannah/3df2ea9184fd2f2f8ab80e219c73b5c0[this gist].
+
+=== The Login Page
+
+The _Login_ page is quite similar to the signup page so I'll skip details that were covered in the creation of the _Signup_ page.
+
+Create a view in the same folder as the SignupPage named "LoginPage.xml", with the following contents:
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<border view-controller="com.example.tweetapp.controllers.LoginPageViewController"
+        uiid="SignupPage"
+        safeArea="true"
+        componentForm.formBottomPaddingEditingMode="true"
+        xsi:noNamespaceSchemaLocation="LoginPage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+
+    <define-category name="LOGIN"/>
+
+    <define-tag name="phoneEmailOrUsername"/>
+    <define-tag name="password"/>
+
+    <!-- Properties for error messages -->
+    <define-tag name="phoneEmailOrUsernameErrorMessage"/>
+    <define-tag name="passwordErrorMessage"/>
+
+    <title>
+        <label iconUIID="TwitterIcon" fontIcon="(char)0xe902" ></label>
+    </title>
+    <y layout-constraint="center" uiid="SignupPageContent" scrollableY="true">
+        <label uiid="SignupPageTitle">Login to Tweet App</label>
+        <radTextField
+                tag="phoneEmailOrUsername"
+                component.hint="Phone, email or username"
+                component.uiid="TwitterTextField"
+                component.hintLabel.uiid="TwitterTextFieldHint"
+                component.constraint="TextArea.USERNAME"
+        />
+
+        <radLabel tag="phoneEmailOrUsernameErrorMessage"
+                  bind-hidden="${phoneEmailOrUsernameErrorMessage}.isEmpty()"
+                  rad-transition="hidden 0.3s"
+                  component.uiid="FieldErrorMessage"
+        />
+
+        <radTextField
+                tag="password"
+                component.hint="Password"
+                component.uiid="TwitterTextField"
+                component.hintLabel.uiid="TwitterTextFieldHint"
+                component.constraint="TextArea.PASSWORD"
+        />
+
+
+        <radLabel tag="passwordErrorMessage"
+                  bind-hidden="${passwordErrorMessage}.isEmpty()"
+                  rad-transition="hidden 0.3s"
+                  component.uiid="FieldErrorMessage"
+        />
+
+
+    </y>
+    <border layout-constraint="south" uiid="SignupPageSouth">
+        <x layout-constraint="west">
+            <button  uiid="TwitterFooterAction" rad-href="#ForgotPassword">
+                Forgot Password?
+            </button>
+        </x>
+        <x layout-constraint="east">
+            <button  uiid="TwitterNextButton" text="Log in">
+                <bind-action category="LOGIN"/>
+            </button>
+        </x>
+
+    </border>
+
+
+</border>
+
+
+----
+
+It this looks similar to the _Signup_ page, that's because started by copying and pasting the _signup_ contents into this view, then changed the tags, actions, and fields to suit the login form that we are trying to recreate.
+
+TIP: In order to demonstrate an alternative way to modify the top-level _Form_ object for this view, we used the `componentForm.formBottomPaddingEditingMode="true"` attribute to set the form bottom padding editing property on the form.  In the SignupForm we did this inside one of the `<script>` tags.  It is, perhaps, cleaner to do it this way to retain the declarative definition of the UI.
+
+Notice the `view-controller` attribute which specifies that this view should use the class `com.example.tweetapp.controllers.LoginPageViewController` as its view controller.  Create this class now with the following contents:
+
+[source,java]
+----
+package com.example.tweetapp.controllers;
+
+import com.codename1.components.InfiniteProgress;
+import com.codename1.components.ToastBar;
+import com.codename1.rad.controllers.Controller;
+import com.codename1.rad.controllers.ViewController;
+import com.codename1.rad.nodes.ActionNode;
+import com.codename1.rad.util.NonNull;
+import com.codename1.ui.Dialog;
+import com.example.tweetapp.services.TweetAppClient;
+import com.example.tweetapp.views.*;
+
+public class LoginPageViewController extends ViewController {
+    /**
+     * Creates a new ViewController with the given parent controller.
+     *
+     * @param parent
+     */
+    public LoginPageViewController(Controller parent) {
+        super(parent);
+    }
+
+    @Override
+    protected void initControllerActions() {
+        super.initControllerActions();
+        ActionNode.builder()
+                .addToController(this, LoginPage.LOGIN, this::handleSubmit);
+    }
+
+    /**
+     * Handles the registration form submission
+     * @param evt
+     */
+    private void handleSubmit(ActionNode.ActionNodeEvent evt) {
+
+        // We will handle the login action here
+
+    }
+}
+
+----
+
+Referring back to the _LoginPage.xml_ contents, notice that I have a _Forgot Password_ button in the lower left:
+
+[source,xml]
+----
+<button  uiid="TwitterFooterAction" rad-href="#ForgotPassword">
+    Forgot Password?
+</button>
+----
+
+For this link to work, I also created the style _TwitterFooterAction_ to match the style of the buttons I created on the Signup page for toggling between the email and phone fields:
+
+[source,css]
+----
+TextFieldToggleButton, TwitterFooterAction  {
+    ...
+}
+----
+
+Finally, the `rad-href` attribute references a _ForgotPassword_ view, which we'll create a placeholder for now.  Create the view "ForgotPassword.xml" in the same directory as our other views with the following contents:
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<y xsi:noNamespaceSchemaLocation="ForgotPassword.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <title>Forgot Password</title>
+
+</y>
+----
+
+Finally, we need to "link" the _Welcome_ page to our new login page, by adding a `rad-href` attribute to the _Login_ link.  Open the _WelcomePage.xml_ file and change the _login_ link to:
+
+[source,xml]
+----
+<button uiid="TwitterSmallLink" rad-href="#LoginPage">Log in</button>
+----
+
+Now, if you reload the app in the simulator, and click on the _Login_ link, you should see something like:
+
+image::images/tweetapp-login-page-1.png[]
+
+===== Handling the Login
+
+We validate the login using the same technique as we used for the _Signup_ form.  We need to modify the _TweetAppClient_ to support login, and in order to achieve some reuse with the _signup_ flow, I refactored it a bit, but nothing major.
+
+You can review the sources that were added in this section in https://gist.github.com/shannah/246b99b2ec064beaf6c946a2b604ad0b[this gist].
+
+. https://gist.github.com/shannah/246b99b2ec064beaf6c946a2b604ad0b#file-loginpage-xml[LoginPage.xml]
+. https://gist.github.com/shannah/246b99b2ec064beaf6c946a2b604ad0b#file-loginpageviewcontroller-java[LoginPageViewController.java]
+. https://gist.github.com/shannah/246b99b2ec064beaf6c946a2b604ad0b#file-theme-css[theme.css]
+. https://gist.github.com/shannah/246b99b2ec064beaf6c946a2b604ad0b#file-tweetappclient-java[TweetAppClient.java]
+
+There are two other pages available to users without logging in:
+
+. ForgotPassword
+. The About Page
+
+These pages don't require anything new that wasn't covered in the _Signup_ and _Login_ pages, so I'm going to skip them for now, so that we can move onto the real meat of this app: _The News Feed_.
+
+=== The News Feed
+
+The _News Feed_ of this app gives us an opportunity to show off some of the powerful "list" features of CodeRAD.  For this tutorial, I'm going to use the https://www.nasa.gov/rss/dyn/breaking_news.rss[NASA breaking news RSS feed] as our data source, as it includes all of the key elements of a news feed: headlines, descriptions, dates, authors, and images.
+
+I'm going to cheat a tiny bit and use some of the models and views in the `tweet-app-ui-kit` cn1lib - a module that I developed to provide some _Twitter-esque_ components out of the box.  In addition to providing our app with some pre-built, polished components, it will demonstrate how to use third-party libraries in your apps.
+
+==== Adding the Tweet App UI Kit Dependency
+
+The Tweet App UI Kit is a library that contains some models and views that are helpful when building a Twitter-like app.  We'll start by adding the Maven dependency for this library.
+
+Open the _common/pom.xml_ file and add the following snippet to the `<dependencies>` section:
+
+[source,xml]
+----
+<dependency>
+    <groupId>com.codenameone</groupId>
+    <artifactId>tweet-app-ui-kit-lib</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <type>pom</type>
+</dependency>
+----
+
+IMPORTANT: The `version` listed here is a SNAPSHOT version because, at the time of writing, I hadn't published it yet to Maven central.  I plan to remove this and update it with a release version ASAP.  If you're reading this comment, then I haven't done that yet.  Try to find a release version on Maven central, or clone the https://github.com/shannah/TweetAppUIKit[github repository] and build it from source using `mvn install` to be able to use the SNAPSHOT version listed here.
+
+After adding the dependency, you can expedite the download of its jar files by right clicking the _pom.xml_ file, and selecting _Maven_ > _Reload Project_.
+
+
+==== The HomePage View
+
+The HomePage view is where we will display our news feed. The swiss army knife for "list" content is the _EntityListView_ which can be created with the `<entityList>` tag.  See <<entity-lists>> in the _Getting Started_ tutorial for an introductory example involving Entity Lists.
+
+There are two parts to an entity list:
+
+. The View (a subclass of _EntityListView_)
+. The provider (usually a subclass of _AbstractEntityListProvider_).
+
+.Providers
+****
+The provider isn't strictly necessary, as the view has its own View model (an _EntityList_) that you can work with directly to provide rows for the list.  E.g. you can construct an _EntityList_ and pass it to the _EntityListView_ for rendering, or you can obtain a reference to the EntityListView's model directly and add, remove, or modify rows directly.
+
+Providers simplify two common patterns in app development:  _Pull to Refresh_ and _Infinite Scroll_.  When you register a provider with an EntityListView, it enables both of these features on the list.
+
+When the user issues a "Pull to refresh" on the list (by pulling down at the top of the list, then releasing), it sends a "Refresh" request to the provider asynchronously.  The provider processes this request and returns an EntityList to the view, which replaces its own rows with the rows returned by the provider.
+
+When the user scrolls to the bottom of the list, the view will send a "Load More" request to the provider, which fill fulfill the request in the same way as it fulfills a "Refresh" request.  The difference is that the view will _append_ the rows it receives back, rather than _replacing_ the existing rows with them.
+
+.This diagram shows how _EntityListView_ loads its data from an `EntityListProvider`.  The EntityListView fires a "request" event which is "handled" by the registered provider by attaching an EntityList to the event, which the EntityListView adds to its own model.  Refresh events result in all rows being replaced.  "Load More" events result in rows being appended.
+image::images/entitylist-provider-diagram.png[]
+****
+
+===== The TweetListView
+
+In <<entity-lists>> in the _Getting Started_ tutorial, I demonstrated how to use the `<entityList>` tag directly to create a list.  For this app, I'm going to use a prebuilt view, _TweetListView_ which _contains_ an EntityListView.  The _TweetListView_ renders a list of _Tweet_ entities similar to the way that the Twitter app renders its tweets.  It also includes some Action categories that will allow us to plug in our own actions in each row.
+
+.Screenshot of the _TweetListView_ component using some sample data.
+image::images/tweetlistview.png[]
+
+You can see an example of the _TweetListView_ in the above screenshow.  All of the content in this list is pulled from ether the row models (`Tweet` entities), or actions defined in the controller and registered in specific categories.  The following diagram shows where each piece of content comes from.
+
+image::images/TweetListView-diagram.png[]
+
+link:images/TweetListView-diagram.png[Open diagram image directly]
+
+TIP: For more detailed information about the _TweetListView_ component, see the https://github.com/shannah/TweetAppUIKit/wiki/TweetListView[TweetListView wiki page].
+
+Before we add this list view to our homepage, let's implement a provider, so that it will have some content to show.
+
+Create a package named `com.example.tweetapp.providers` if you haven't already, and add a new class named "NewsFeedProvider" with the following contents:
+
+[source,java]
+----
+package com.example.tweetapp.providers;
+
+import com.codename1.io.Log;
+import com.codename1.io.rest.Rest;
+import com.codename1.l10n.SimpleDateFormat;
+import com.codename1.rad.io.ParsingService;
+import com.codename1.rad.models.AbstractEntityListProvider;
+import com.codename1.rad.models.EntityList;
+import com.codename1.rad.processing.Result;
+import com.codename1.twitterui.models.TWTAuthor;
+import com.codename1.twitterui.models.TWTAuthorImpl;
+import com.codename1.twitterui.models.Tweet;
+import com.codename1.twitterui.models.TweetImpl;
+import com.codename1.util.StringUtil;
+import com.codename1.xml.Element;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStreamReader;
+import java.util.List;
+
+/**
+ * A "provider" class that provides rows to EntityListViews that want to display a news feed.
+ * This uses {@link Tweet} objects as the row models.
+ *
+ * This is used for the news feed in the HomePage.
+ */
+public class NewsFeedProvider extends AbstractEntityListProvider {
+    @Override
+    public Request getEntities(Request request) {
+
+        // Fetch NASA RSS Feed
+        Rest.get("https://www.nasa.gov/rss/dyn/breaking_news.rss")
+                .onError(evt->{
+                    // Propagate error back to the request
+                    request.error(evt.getError());
+                })
+                .fetchAsBytes(v -> {
+                    // The ParsingService will parse XML asynchronously on a background thread
+                    // so that it doesn't impede the EDT
+                    ParsingService parser = new ParsingService();
+
+                    parser.parseXML(new InputStreamReader(new ByteArrayInputStream(v.getResponseData())))
+                        .onResult((res, err) -> {
+                            if (err != null) {
+                                // Error parsing XML.  Propagate up to request.
+                                request.error(err);
+                                return;
+                            }
+
+                            // Create EntityList which will be returned to the request.
+                            EntityList out = new EntityList();
+
+                            // A date formatter to format dates in the RSS feed.
+                            // (Determined format string based on the format in the Feed)
+                            SimpleDateFormat dateFormatter = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm z");
+
+                            // News items are all in <item> tags of the feed.  Get them all as a list
+                            List<Element> items = (List<Element>)res.getDescendantsByTagName("item");
+                            for (Element item : items) {
+                                try {
+                                    // Wrapping item in Result object makes it easier
+                                    // to extract values in correct format and navigate around
+                                    // nulls.
+                                    Result ritem = Result.fromContent(item);
+
+                                    // Tweet is an Entity defined in the tweet-app-ui-kit cn1lib
+                                    // to encapsulate a "Tweet", which is basically a news item.
+                                    // We will use these for the row models of the list.
+                                    Tweet tweet = new TweetImpl();
+                                    tweet.setText(ritem.getAsString("description"));
+                                    String dateString = ritem.getAsString("pubDate");
+                                    dateString = StringUtil.replaceAll(dateString, "EDT", "GMT-4:00");
+                                    dateString = StringUtil.replaceAll(dateString, "EST", "GMT-5:00");
+                                    tweet.setDatePosted(dateFormatter.parse(dateString));
+                                    tweet.setImage(item.getFirstChildByTagName("enclosure").getAttribute("url"));
+                                    tweet.setLink(ritem.getAsString("link"));
+
+                                    // TWTAuthor is an Entity defined in the tweet-app-ui-kit cn1li
+                                    // to encapsulate Tweet author details.
+                                    TWTAuthor author = new TWTAuthorImpl();
+                                    author.setName("NASA");
+                                    author.setThumbnailUrl("https://pluspng.com/img-png/nasa-logo-png-file-nasa-logo-svg-1237.png");
+                                    tweet.setAuthor(author);
+
+                                    // Add tweet to the list.
+                                    out.add(tweet);
+
+
+                                } catch (Exception ex) {
+                                    // Hopefully no exceptions here, but log them anyways
+                                    Log.e(ex);
+                                }
+                            }
+
+                            // Pass the EntityList to the request so that
+                            // it can be used by the requesting EntityListView.
+                            request.complete(out);
+                        });
+
+
+                });
+        return request;
+    }
+}
+
+----
+
+
+The only _mandatory_ method we need to implement in a provider is the `getEntities()` method, which takes a `Request` object and "fills" it with an `EntityList`.  In this class we are asynchronously fetching the NASA RSS feed, and parsing it into `Tweet` entities (_Tweet_ is part of the Tweet App UI Kit cn1lib).
+
+This provider is very basic as it doesn't handle "paging".  It treats every request as a "Refresh" request.  Later we'll learn how to support paging (i.e. _Load More_ requests).
+
+The XML parsing logic is fairly straight forward as it is based on the XML content of the RSS feed.  The following is an excerpt of such a feed.
+
+[source, xml]
+----
+<?xml version="1.0" encoding="utf-8" ?>
+  <rss ...>
+    <channel>
+      <title>NASA Breaking News</title>
+      <description>A RSS news feed containing the latest NASA news articles and press releases.</description>
+      ...
+     <item>
+       <title>NASA to Air Launch, Docking of Roscosmos Cargo Ship to Space Station</title>
+       <link>http://www.nasa.gov/press-release/nasa-to-air-launch-docking-of-roscosmos-cargo-ship-to-space-station</link>
+        <description>Live coverage of Russia’s Progress 78 cargo spacecraft’s launch and docking to the International Space Station will begin at 7 p.m. EDT Tuesday, June 29, on NASA Television, the agency’s website, and the NASA app.</description>
+        <enclosure url="http://www.nasa.gov/sites/default/files/styles/1x1_cardfeed/public/thumbnails/image/iss064e033785_orig.jpg?itok=lLmxLaJj" length="683114" type="image/jpeg" />
+        <guid isPermaLink="false">http://www.nasa.gov/press-release/nasa-to-air-launch-docking-of-roscosmos-cargo-ship-to-space-station</guid>
+        <pubDate>Wed, 23 Jun 2021 17:21 EDT</pubDate>
+        <source url="http://www.nasa.gov/rss/dyn/breaking_news.rss">NASA Breaking News</source>
+        <dc:identifier>472019</dc:identifier>
+</item>
+... more items
+----
+
+We use the _ParsingService_ class for XML parsing because it will perform parsing on a background thread to keep it out of the way of the UI thread.
+
+We fetch all of the `<item>` tags in the feed using `List<Element> items = (List<Element>)res.getDescendantsByTagName("item");`
+
+Then, with each `<item>` element, we build a `Tweet` object and add it to the entity list.
+
+TIP: See the https://github.com/shannah/TweetAppUIKit/wiki/Tweet[Tweet wiki page] for a full list of properties and tags provided by the _Tweet_ entity.
+
+A couple of "ugly" things worth noting here:
+
+. The feed seems to render the date with the `EDT` timezone, and SimpleDateFormat wasn't recognizing this.  Rather than explicitly register the EDT timezone, I did a `replaceAll()` on "EDT" to convert it to "GMT-4:00" which is equivalent (4 hours behind GMT) and in a format that SimpleDateFormat will handle nicely.
+
+. The `Result` class that I use here is the CodeRAD version (`com.codename1.rad.processing.Result`), not the core Codename One `Result` class.  This is because the behaviour of selectors in the core Codename One class doesn't handle contexts (i.e. all queries assumed to be from the root element), and changing the behaviour would have potentially broken a lot of legacy apps.  So I "forked" it for CodeRAD, and changed the behaviour of selectors to support contextual selectors.
+
+Before we can use our provider, we need to add a lookup to it in the Application delegate class.
+
+TIP: We could also place it in a more specific ViewController class for this view, but having it in the Application delegate makes it available to the entire app.  Not just our one view, and this could come in handy later if we want to display a news list from another view.
+
+Add the following snippet to the `onStartController()` method of the Tweetapp class:
+
+[source,java]
+----
+addLookup(new NewsFeedProvider());
+----
+
+Now that we have the provider in place, let's add our `TweetListView` to the Homepage view.  We'll need to import both the provider class and the TweetListView class into our view:
+
+[source,xml]
+----
+<import>
+    import com.codename1.twitterui.views.TweetListView;
+    import com.example.tweetapp.providers.NewsFeedProvider;
+</import>
+----
+
+[TIP]
+====
+The Tweet App UI kit also provides a _Tag Library_ that will allow you to import all of its components into a view using the `<use-taglib>` tag, instead of having to add import statements to each class or package directly.
+
+Using this taglib, we would change the `<import>` statements to:
+
+[source,xml]
+----
+<use-taglib class="com.codename1.twitterui.TagLibrary"/>
+<import>
+    import com.example.tweetapp.providers.NewsFeedProvider;
+</import>
+----
+
+====
+
+Then we can add the list view with the following snippet:
+
+[source,xml]
+----
+<tweetListView
+        layout-constraint="center"
+        provider="NewsFeedProvider.class"
+/>
+----
+
+After adding these snippets, the contents of the HomePage.xml view will be:
+
+[source, xml]
+----
+<?xml version="1.0"?>
+<border xsi:noNamespaceSchemaLocation="HomePage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <title><label iconUIID="TwitterIcon" fontIcon="(char)0xe902" ></label></title>
+
+    <import>
+        import com.codename1.twitterui.views.TweetListView;
+        import com.example.tweetapp.providers.NewsFeedProvider;
+    </import>
+
+    <tweetListView
+            layout-constraint="center"
+            provider="NewsFeedProvider.class"
+    />
+</border>
+----
+
+Now, fire up the simulator, log in (to navigate to the _HomePage_ view), and you should see something like:
+
+image::images/tweetapp-homepage-1.png[]
+
+==== Injecting Actions
+
+At this point we have a nice looking list, but we're just scratching the surface of the `TweetListView` component's capabilities.  It defines a handful of action categories that will allow us to inject our own actions into each row.  Some of these actions will be manifested as buttons. Other will result in a drop-down menu being added to each row, and some of them aren't "rendered" per-se, but will be triggered in response to user actions such as pressing, or long-pressing.
+
+TIP: For a full list of the actions supported by the _TweetRowView_ (the view used to render each row of the list), see the https://github.com/shannah/TweetAppUIKit/wiki/TweetRowView#actions[TweetRowView wiki page].
+
+We could add our actions inside the Application controller, as that would make them available to our view.  But in this case, I'd like to confine their scope to just the _HomePage_ view.  Therefore, we are going to need to create a view controller for our view.
+
+In the same package as our other view controllers, create a new class named `HomePageViewController` with the following contents.
+
+[source,java]
+----
+package com.example.tweetapp.controllers;
+
+import com.codename1.rad.controllers.Controller;
+import com.codename1.rad.controllers.ViewController;
+import com.codename1.rad.nodes.ActionNode;
+import com.codename1.twitterui.views.TweetRowView;
+import com.codename1.ui.FontImage;
+
+public class HomePageViewController extends ViewController {
+    /**
+     * Creates a new ViewController with the given parent controller.
+     *
+     * @param parent
+     */
+    public HomePageViewController(Controller parent) {
+        super(parent);
+    }
+
+    @Override
+    protected void initControllerActions() {
+        super.initControllerActions();
+
+        ActionNode.builder()
+                .icon(FontImage.MATERIAL_CHAT_BUBBLE_OUTLINE)
+                .addToController(this, TweetRowView.TWEET_ACTIONS, evt -> {});
+
+        ActionNode.builder()
+                .icon(FontImage.MATERIAL_FORWARD)
+                .addToController(this, TweetRowView.TWEET_ACTIONS, evt -> {});
+
+        ActionNode.builder()
+                .icon(FontImage.MATERIAL_FAVORITE_OUTLINE)
+                .addToController(this, TweetRowView.TWEET_ACTIONS, evt -> {});
+
+        ActionNode.builder()
+                .icon(FontImage.MATERIAL_SHARE)
+                .addToController(this, TweetRowView.TWEET_ACTIONS, etc -> {});
+
+    }
+}
+
+----
+
+Notice that I've registered four actions, all in the `TweetRowView.TWEET_ACTIONS` category.  Actions in the `TWEET_ACTIONS` category will be rendered as buttons below each "tweet" in the list.  Right now these actions don't do anything because I've supplied empty action listeners, but the actions will still show up.
+
+If you load up the homepage in the simulator, it should now look something like:
+
+image::images/tweetapp-tweetlistview-with-actions.png[]
+
+We can also add an "overflow" menu to each tweet, by adding actions to the `TWEET_MENU_ACTIONS` category.
+
+Add the following to the `initControllerActions()` method after our existing actions:
+
+[source,java]
+----
+
+        ActionNode.builder()
+            .label("Not interested in this")
+            .icon(FontImage.MATERIAL_MOOD_BAD)
+                .addToController(this, TweetRowView.TWEET_MENU_ACTIONS, evt -> {});
+
+
+        ActionNode.builder()
+            .icon(FontImage.MATERIAL_REMOVE)
+            .label(e->{
+                    Tweet tweet = TweetWrapper.wrap(e);
+                    if (tweet.isEntity(Tweet.author)) {
+                        return "Unfollow "+tweet.getAuthor().getName();
+                    } else if (!tweet.isEmpty(Tweet.authorId)){
+                        return "Unfollow "+tweet.getAuthorId();
+                    }
+                    return "Unfollow this user";
+                })
+                .addToController(this, TweetRowView.TWEET_MENU_ACTIONS, evt -> {});
+
+        ActionNode.builder()
+            .icon(FontImage.MATERIAL_VOLUME_OFF)
+            .label(e->{
+                    Tweet tweet = TweetWrapper.wrap(e);
+                    if (tweet.isEntity(Tweet.author)) {
+                        return "Mute "+tweet.getAuthor().getName();
+                    } else if (!tweet.isEmpty(Tweet.authorId)){
+                        return "Mute "+tweet.getAuthorId();
+                    }
+                    return "Mute this user";
+                })
+            .addToController(this, TweetRowView.TWEET_MENU_ACTIONS, evt -> {});
+----
+
+This adds three more actions.  This time, in the `TweetRowView.TWEET_MENU_ACTIONS`, which will cause an "overflow" menu to appear.
+
+Notice that for the _label_ method of two of these actions, we pass a lambda callback instead of a string.  The lambda is a callback that is processed whenever the view model is updated.  This allows the label to by dynamic - displaying a different string depending on the state of the model.  It receives the view model (in this case the view model is the _Tweet_ entity for the row that the action is rendered into).  I use the `TweetWrapper` to wrap the entity as a `Tweet` so that we can use the nicer Java strongly-typed API.
+
+Now look in the simulator, and you should see a little menu in the upper right of each row:
+
+image::images/tweetapp-newsfeed-with-overflow-menu.png[]
+
+If you click on the menu, it will display the menu options in an action sheet:
+
+image::images/tweetapp-overflow-actionsheet.png[]
+
+NOTE: TweetListView supports several other action categories that will allow you to respond to events like clicks and long presses on the author, or the tweet itself.  See the https://github.com/shannah/TweetAppUIKit/wiki/TweetListView#actions[TweetListView wiki page] for a full list.
+
+==== Collapsible Header
+
+One nice aspect of the real twitter app is the title area collapses when you scroll down do that the list itself gets more real estate.  The area appears again when you start scrolling up.
+
+We can achieve the same effect using the CodeRAD `<collapsibleHeader>` component.
+
+We're going to make some changes to the HomePage.xml template:
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<border view-controller="com.example.tweetapp.controllers.HomePageViewController"
+        xsi:noNamespaceSchemaLocation="HomePage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <title hidden="true"/> <1>
+
+    <use-taglib class="com.codename1.twitterui.TagLibrary"/>
+    <import>
+        import com.example.tweetapp.providers.NewsFeedProvider;
+    </import>
+
+    <collapsibleHeader scrollableComponent="#tweetList"> <2>
+        <center><label iconUIID="TwitterIcon" fontIcon="(char)0xe902" ></label></center>
+    </collapsibleHeader>
+
+    <tweetListView
+            name="tweetList" <3>
+            layout-constraint="center"
+            provider="NewsFeedProvider.class"
+    />
+</border>
+----
+<1> We set `<title hidden="true"/>` to hide the default title bar.
+<2> We add `<collapsibleHeader>` which will create a custom collapsible title bar.  This tag expects 1 child XML tag, which it will make the contents of the title bar.
+<3> We add the `name` attribute to the `<tweetListView>` tag so that it can be referenced from the `scrollableComponent` attribute in the `<collapsibleHeader>` tag.  The collapsible header then listens to scroll activity on this component to know when to collapse and expand.
+
+Here is a short video clip of the collapsible header in action:
+
+video::DmquufraQaA[youtube, width=400, height=800]
+
+TIP: For more information about the CollapsibleHeader component see the https://github.com/shannah/CodeRAD/wiki/CollapsibleHeader[CollapsibleHeader wiki page].
+
+
+=== Search Bar and Side Bar
+
+Next we'll be adding the Twitter search bar at the top of the screen.  While we're at it, I'd like to add the side nav menu as well.
+
+We'll place the search bar inside the `<collapsibleHeader>` tag, replacing the icon that we had there before:
+
+[source,xml]
+----
+<collapsibleHeader scrollableComponent="#tweetList">
+    <twtTitle>
+        <twtsearchButton rad-href="#SearchForm" rad-href-trigger="TWTSearchButton.SEARCH_ACTION"/>
+    </twtTitle>
+</collapsibleHeader>
+----
+
+I'm introducing two new tags here:
+
+`<twtTitle>`::
+A title bar that is styled like the Twitter app's title bar, including a profile icon (i.e. avatar of the logged in user) in the upper right.
+
+`<twtsearchButton>`::
+A button that looks like a search field.  When the user presses this button, it should navigate to the actual search form with the search field focused.
+
+The `<txtsearchButton>` is nested in the `<twtTitle>` tag, making it the the title bar contents.
+
+.The `<twtHeader>` tag with embedded `<txtsearchButton>`
+image::images/tweetapp-twtTitle-twtSearchButton.png[]
+
+For the sidebar, we'll use the `<sidebar>` tag (which is a core component of CodeRAD), with a `<twtSidebar>` component as the sidebar contents:
+
+[source,xml]
+----
+<sidebar>
+    <twtSideBarView/>
+</sidebar>
+----
+
+After adding these tags, the HomePage.xml view contents will be:
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<border view-controller="com.example.tweetapp.controllers.HomePageViewController"
+        xsi:noNamespaceSchemaLocation="HomePage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <title hidden="true"/>
+
+    <use-taglib class="com.codename1.twitterui.TagLibrary"/>
+    <import>
+        import com.example.tweetapp.providers.NewsFeedProvider;
+    </import>
+
+    <collapsibleHeader scrollableComponent="#tweetList">
+        <twtTitle>
+            <twtsearchButton rad-href="#SearchForm" rad-href-trigger="TWTSearchButton.SEARCH_ACTION"/>
+        </twtTitle>
+    </collapsibleHeader>
+    <sidebar>
+        <twtSideBarView/>
+    </sidebar>
+
+    <tweetListView
+            name="tweetList"
+            layout-constraint="center"
+            provider="NewsFeedProvider.class"
+    />
+
+</border>
+----
+
+
+Now, if you press on the "Account" icon in the top left corner, it will expand from the left to reveal a sidebar as shown here:
+
+image::images/tweetapp-sidebar-1.png[]
+
+==== Populating the Sidebar
+
+The `<twtSideBarView>` allows you to add actions in a few different categories in order to populate the menu options.  It will also "look" for a lookup of the type `TWTUserProfile` to get the name, ID, and avatar of the currently logged in user.
+
+Let's start by adding some actions in our Application controller to target the sidebar.  Place the following inside the `initControllerActions()` method of the application controller:
+
+[source,java]
+----
+// Sidebar Actions which will be injected into the TWTSideBarView
+
+ActionNode.builder()
+    .label("Profile")
+    .icon(FontImage.MATERIAL_ACCOUNT_CIRCLE)
+        .addToController(this, TWTSideBarView.SIDEBAR_ACTIONS, evt -> {});
+
+ActionNode.builder()
+    .label("Lists")
+    .icon(FontImage.MATERIAL_LIST)
+        .addToController(this, TWTSideBarView.SIDEBAR_ACTIONS, evt -> {});
+
+ActionNode.builder()
+    .label("Topics")
+    .icon(FontImage.MATERIAL_CATEGORY)
+        .addToController(this, TWTSideBarView.SIDEBAR_ACTIONS, evt -> {});
+
+ActionNode.builder()
+    .label("Bookmarks")
+    .icon(FontImage.MATERIAL_BOOKMARKS)
+        .addToController(this, TWTSideBarView.SIDEBAR_ACTIONS, evt -> {});
+
+ActionNode.builder()
+    .label("Moments")
+    .icon(FontImage.MATERIAL_BOLT)
+        .addToController(this, TWTSideBarView.SIDEBAR_ACTIONS, evt -> {});
+
+ActionNode.builder()
+    .label("Create new account")
+        .addToController(this, TWTSideBarView.SIDEBAR_TOP_OVERFLOW_MENU, evt -> {});
+
+ActionNode.builder()
+    .label("Add Existing Account")
+        .addToController(this, TWTSideBarView.SIDEBAR_TOP_OVERFLOW_MENU, evt -> {});
+
+ActionNode.builder()
+    .label("Settings and privacy")
+        .addToController(this, TWTSideBarView.SIDEBAR_SETTINGS_ACTIONS, evt -> {});
+
+ActionNode.builder()
+    .label("Help Center")
+        .addToController(this, TWTSideBarView.SIDEBAR_SETTINGS_ACTIONS, evt -> {});
+
+ActionNode.builder()
+    .icon(FontImage.MATERIAL_LIGHTBULB_OUTLINE)
+        .addToController(this, TWTSideBarView.SIDEBAR_BOTTOM_LEFT_ACTIONS, evt -> {});
+
+ActionNode.builder()
+    .icon(FontImage.MATERIAL_SCANNER)
+        .addToController(this, TWTSideBarView.SIDEBAR_BOTTOM_RIGHT_ACTIONS, evt -> {});
+
+ActionNode.builder()
+        .icon(FontImage.MATERIAL_ACCOUNT_CIRCLE)
+        .addToController(this, TWTSideBarView.SIDEBAR_TOP_ACTIONS, evt -> {});
+
+ActionNode.builder()
+        .icon(FontImage.MATERIAL_ACCOUNT_BALANCE_WALLET)
+        .addToController(this, TWTSideBarView.SIDEBAR_TOP_ACTIONS, evt -> {});
+
+
+ActionNode.builder()
+        .icon("Following")
+        .label("311")
+        .addToController(this, TWTSideBarView.SIDEBAR_STATS, evt -> {});
+
+ActionNode.builder()
+        .icon("Followers")
+        .label("344")
+        .addToController(this, TWTSideBarView.SIDEBAR_STATS, evt -> {});
+
+
+----
+
+TIP: For a full list of available action categories in the _TWTSideBarView_ see the https://github.com/shannah/TweetAppUIKit/wiki/TWTSideBarView#actions[TWTSideBarView wiki page].
+
+The sidebar view can also be coaxed to display the correct username and avatar of the currently logged in user.  It does a lookup for `TWTUserProfile`, and, if found, it users that profile's username and avatar image.
+
+In order to simplify the example, I'm going to hard-code the user profile to my account.  We can register the profile as follows:
+
+[source,java]
+----
+TWTUserProfile userProfile = new TWTUserProfileImpl();
+userProfile.setName("Steve Hannah");
+userProfile.setIdentifier("@shannah78");
+userProfile.setThumbnailUrl("https://www.codenameone.com/img/steve.jpg");
+addLookup(TWTUserProfile.class, userProfile);
+----
+
+IMPORTANT: One important thing to notice here is that our _addLookup()_ call takes two parameters.  Previously when adding lookups we had just been using the single-arg variant.  The reason is that the TWTSideBar component will be doing a lookup on the `TWTUserProfile` interface, but our profile is actually an instance of `TWTUserProfileImpl`, which implements `TWTUserProfile`.  Lookups need to be exact though, they don't match if a subclass is registered.  Only if the _exact_ class is registered.
+
+This code should be added to the LoginPageViewController at the point when the login is completed:
+
+[source,java]
+----
+client.createLoginRequest()
+        .username(viewModel.getPhoneEmailOrUsername())
+        .password(viewModel.getPassword())
+        .login()
+        .onResult((res, error) -> {
+
+            // ... other content omitted for clarity
+
+            // Login was successful.  Set the `TWTUserProfile` lookup
+            // NOTE: We hardcode it here, but in real app, we would use the login
+            // details to construct an accurate user profile
+            TWTUserProfile userProfile = new TWTUserProfileImpl();
+            userProfile.setName("Steve Hannah");
+            userProfile.setIdentifier("@shannah78");
+            userProfile.setThumbnailUrl("https://www.codenameone.com/img/steve.jpg");
+            getApplicationController().addLookup(TWTUserProfile.class, userProfile);
+            new HomePageController(getApplicationController()).show();
+        });
+----
+
+TIP: See the full listing of _LoginPageViewController_ after this change in https://gist.github.com/shannah/7d75a37bdf6cbfde51ff483a5cae0c19[this gist].
+
+I'm also going to take this opportunity to add support for "remembering" who is logged in, so that when the app refreshes, it will retain this login information.
+
+This will require small changes to the _TweetAppClient_ and the application controller.
+
+Currently the _TweetAppClient_ tracks login status with a _loggedIn_ boolean variable.  Let's wrap this in a private setter method, and also set a _logged in_ property in _Preferences_.  Then we'll set the _loggedIn_ property in the TweetAppClient's constructor based on the value found in preferences.
+
+WARNING: The technique used for remembering login status is simplified for clarity here.  In a real app you would probably store a token instead, and use it to query the login status.
+
+.TweetAppClient will now store the login status in preferences.  This will be set on login, and retrieved in the constructor.
+[source,java]
+----
+public TweetAppClient() {
+
+    // Logged in status tracked in preferences.
+    // In real app, you wouldn't do it this way.  You would track a token
+    // and use it to query the logged in status.
+    loggedIn = Preferences.get("loggedIn", false);
+    if (loggedIn) {
+        // Hardcoded logged in user because this is a demo app.
+        // In real app you would set logged in user according to
+        // who is actually logged in.
+        loggedInUserId = "@shannah78";
+    }
+}
+
+...
+
+private void setLoggedIn(boolean loggedIn) {
+    this.loggedIn = loggedIn;
+
+    // We stored the logged in status in Preferences only for simplicity
+    // because this is a demo app.  In a real app you would probably store
+    // a token instead and use it to test whether the user is currently logged in.
+    Preferences.set("loggedIn", loggedIn);
+}
+----
+
+We also need to find the places where the `loggedIn` variable is set, and change it to use `setLoggedIn()` instead:
+
+[source,java]
+----
+loggedIn = true;
+----
+
+changed to
+
+[source,java]
+----
+setLoggedIn(true);
+----
+
+See the full code listing of _TweetAppClient_ after these changes in https://gist.github.com/shannah/804744f7f734d1c927e9de9879c9db08[this gist].
+
+Finally, now that the app "remembers" who is logged in, we can make it skip directly to the _HomePage_ on start instead showing the welcome page.
+
+Modify the _actionPerformed()_ method of the application controller to check if the user is logged in, and , if so, show the homepage:
+
+[source,java]
+----
+public void actionPerformed(ControllerEvent evt) {
+
+    with(evt, StartEvent.class, startEvent -> {
+        if (!startEvent.isShowingForm()) {
+            startEvent.setShowingForm(true);
+            if (lookup(TweetAppClient.class).isLoggedIn()) {
+                new HomePageController(this).show();
+            } else {
+                new WelcomePageController(this).show();
+            }
+        }
+
+    });
+    super.actionPerformed(evt);
+}
+----
+
+There is still a problem with this, however.  We haven't set the _TWTUserProfile_ lookup in this case, so the _TWTSideBarView_ won't have access to the current user profile.
+
+We'll remedy this by registering the lookup in the `onStartController()` method of the application controller:
+
+[source,java]
+----
+if (client.isLoggedIn()) {
+
+    // The client is logged in.  We hardcode the userprofile here as me
+    // but in real app you would have the profile created based on who is logged in.
+    TWTUserProfile userProfile = new TWTUserProfileImpl();
+    userProfile.setName("Steve Hannah");
+    userProfile.setIdentifier("@shannah78");
+    userProfile.setThumbnailUrl("https://www.codenameone.com/img/steve.jpg");
+    addLookup(TWTUserProfile.class, userProfile);
+
+}
+----
+
+TIP:  See the full listing for _Tweetapp.java_ after this change in https://gist.github.com/shannah/9fed8c117be477d513d5729bb6f0377f[this gist].
+
+Now if we look at the simulator, we'll see a couple of differences.  The title bar now shows my avatar image, as it _also_ does a lookup on _TWTUserProfile_.
+
+image::images/twtTitleBar-with-avatar.png[]
+
+And, if we tap on the avatar, it will expand the sidebar fully populated as shown here:
+
+image::images/twtSideBarView-fully-populated.png[]
+
+=== The Global Navigation Tabs
+
+We will use the `<globalTabs>` component, which is part of the Tweet App UI Kit, to add the twitter-style navigation tabs to the bottom of each page.  Before adding the tag to our view, we'll create the actions that will be used as tabs.  In the application controller, add the following action definitiions as `public static` variables:
+
+[source,java]
+----
+public static final ActionNode HOME_TAB = ActionNode.builder().
+        icon(FontImage.MATERIAL_HOME).
+        addActionListener(evt->{
+            evt.consume();
+            TWTGlobalTabs.showTab(
+                    evt,
+                    new HomePageController(ApplicationController.getApplicationController(evt))
+            );
+        }).
+        build();
+
+public static final ActionNode INBOX_TAB = ActionNode.builder().
+        icon(FontImage.MATERIAL_INBOX).
+        badge("2").
+        addActionListener(evt->{
+            evt.consume();
+            TWTGlobalTabs.showTab(
+                    evt,
+                    new InboxPageController(ApplicationController.getApplicationController(evt))
+            );
+
+        }).
+        build();
+----
+
+NOTE: We create these actions as `public static` variables because we will need to reference the actions directly, and individually, from within the _view_.
+
+We've broken a little bit of new ground with these action definitions.  The `INBOX_TAB` action includes a "badge" directive, which will be rendered on the tab icon as a badge.  The `addActionListener()` method is also new.  It, predictably, will be called when the user clicks on the corresponding tab.
+
+The `TWTGlobalTabs.showTab()` method is a utility method that will automatically transition to the new tab in the correct direction.  E.g. When navigating from a tab to another tab that is to the left, the transition should go to the left.
+
+Now, in the `initControllerActions()` method we need to register these actions with the `TWTGlobalTabs.GLOBAL_TABS` category:
+
+[source,java]
+----
+addActions(TWTGlobalTabs.GLOBAL_TABS,
+        HOME_TAB, INBOX_TAB
+);
+----
+
+In our case our global tabs component will include two tabs: _Home_ and _Inbox_.
+
+We need to create the `InboxPage` view that we reference in our tabs.  Create a view named "InboxPage.xml" in the same directory as your other views:
+
+[source,xml]
+----
+<?xml version="1.0"?>
+<border xsi:noNamespaceSchemaLocation="InboxPage.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <title>InBox</title>
+    <use-taglib class="com.codename1.twitterui.TagLibrary"/>
+    <globalTabs layout-constraint="south" selectedTab="com.example.tweetapp.Tweetapp.INBOX_TAB"/>
+
+</border>
+----
+
+We've left this view mostly empty, to be developed later - except for the `<globalTabs>` component:
+
+[source,xml]
+----
+<globalTabs layout-constraint="south"
+    selectedTab="com.example.tweetapp.Tweetapp.INBOX_TAB"/>
+----
+
+The `selectedTab` attribute references the action that should be selected.  In this page, it is the `INBOX_TAB` action.  This _reference_ is why we defined our global tabs actions to be `public static` variables.
+
+Now, add the `<globalTabs>` component to the _HomePage_ view:
+
+[source,xml]
+----
+<globalTabs layout-constraint="south"
+    selectedTab="com.example.tweetapp.Tweetapp.HOME_TAB"/>
+----
+
+After adding the global tabs, our app should resemble the following screenshot:
+
+image::images/tweetapp-globaltabs.png[]
+
+TIP: You can see the full source listings of this example in https://gist.github.com/shannah/be58c81314a32d87f1de5c54216a71b4[this gist].
+
+=== Summary
+
+We have left quite a few loose-ends in our "Tweet" app.  None of the links in our side bar do anything.  We haven't implemented search, and we haven't provided a way to add tweets.  I leave these as exercises for the reader, as you should be able to use the fundamentals in this tutorial to implement these functionalities.
+
+You can use the following resources to help you along the way:
+
+https://github.com/shannah/CodeRAD/wiki[CodeRAD wiki]::
+The CodeRAD wiki includes reference documentation for many of the components available in CodeRAD views.
+
+https://github.com/shannah/TweetAppUIKit/wiki[Tweet App UI Kit wiki]::
+The Tweet App UI Kit wiki includes reference documentation for many of the components avaiable in the tweet app UI kit.
+
+https://www.codenameone.com/javadoc/[Codename One javadocs]::
+API documentation for the Codename One library.  Since _all_ of components in Codename One can be used from CodeRAD views, this is your definitive source for what attributes are available in each tag.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,541 @@
+== Serialization: Working with XML and JSON
+
+CodeRAD entities' loose coupling presents advantages beyond the user interface.  Just as you can loosely bind the properties of an entity to a UI View, you can also bind them to elements of and XML or JSON document.  The `ResultParser` class provides a clean and succinct syntax for parsing XML and JSON into entity graphs.
+
+In addition to the ResultParser, CodeRAD provides some convenient utility classes for parsing and querying JSON and XML documents.  This chapter will introduce you to some of these utilities, and provide concrete examples of how they can be used to load data from a JSON or XML web service.
+
+=== Useful Classes
+
+Some of the more useful classes related to XML and JSON parsing are as:
+
+`com.codename1.rad.processing.Result`::
+A derivation of the core Codename One https://www.codenameone.com/javadoc/com/codename1/processing/Result.html[Result] class, which provides an expression language similar to https://en.wikipedia.org/wiki/XPath[XPath] for querying XML and JSON documents.  The CodeRAD version of this class fixes a number of bugs, and expands the expression capability with support for additional expressions.  The decision was made to "fork" the Codename One class, rather than fix bugs because legacy applications may be relying on those "bugs", so changing its behaviour would have been too risky.
+
+`com.codename1.rad.io.ElementSelector`::
+A utility for querying XML documents using syntax similar to CSS selectors.  This class works similarly to the https://www.codenameone.com/javadoc/com/codename1/ui/ComponentSelector.html[ComponentSelector] class, except that this is optimized to work with XML elements rather than Codename One components.
+
+`com.codename1.rad.io.ResultParser`::
+A class that is able to parse XML and JSON documents into entity graphs.  This uses the `Result` class' expression language (similar to XPath syntax) for mapping properties of XML tags and JSON data structures, onto Entity properties.
+
+These classes complement the existing data parsing classes that already exist in the Codename One ecosystem, such as `XMLParser`, `JSONParser`, and the `CN1JSON` cn1lib.
+
+=== Starting at the end... XML to Entity
+
+Before wading through the details XML, JSON, expression languages, and CSS selectors, let's take a peek at our end goal, which is to convert XML or JSON data into Entities.
+
+
+Consider the following sample XML file:
+
+.Some sample XML data that we will be parsing into entities using `ResultParser`.
+[source,xml]
+----
+<?xml version="1.0"?>
+<catalog>
+   <book id="bk101">
+      <author>Gambardella, Matthew</author>
+      <title>XML Developer's Guide</title>
+      <genre>Computer</genre>
+      <price>44.95</price>
+      <publish_date>2000-10-01</publish_date>
+      <description>An in-depth look at creating applications 
+      with XML.</description>
+   </book>
+   <book id="bk102">
+      <author>Ralls, Kim</author>
+      <title>Midnight Rain</title>
+      <genre>Fantasy</genre>
+      <price>5.95</price>
+      <publish_date>2000-12-16</publish_date>
+      <description>A former architect battles corporate zombies, 
+      an evil sorceress, and her own childhood to become queen 
+      of the world.</description>
+   </book>
+   <book id="bk103">
+      <author>Corets, Eva</author>
+      <title>Maeve Ascendant</title>
+      <genre>Fantasy</genre>
+      <price>5.95</price>
+      <publish_date>2000-11-17</publish_date>
+      <description>After the collapse of a nanotechnology 
+      society in England, the young survivors lay the 
+      foundation for a new society.</description>
+   </book>
+   <book id="bk104">
+      <author>Corets, Eva</author>
+      <title>Oberon's Legacy</title>
+      <genre>Fantasy</genre>
+      <price>5.95</price>
+      <publish_date>2001-03-10</publish_date>
+      <description>In post-apocalypse England, the mysterious 
+      agent known only as Oberon helps to create a new life 
+      for the inhabitants of London. Sequel to Maeve 
+      Ascendant.</description>
+   </book>
+   <book id="bk105">
+      <author>Corets, Eva</author>
+      <title>The Sundered Grail</title>
+      <genre>Fantasy</genre>
+      <price>5.95</price>
+      <publish_date>2001-09-10</publish_date>
+      <description>The two daughters of Maeve, half-sisters, 
+      battle one another for control of England. Sequel to 
+      Oberon's Legacy.</description>
+   </book>
+   <book id="bk106">
+      <author>Randall, Cynthia</author>
+      <title>Lover Birds</title>
+      <genre>Romance</genre>
+      <price>4.95</price>
+      <publish_date>2000-09-02</publish_date>
+      <description>When Carla meets Paul at an ornithology 
+      conference, tempers fly as feathers get ruffled.</description>
+   </book>
+   <book id="bk107">
+      <author>Thurman, Paula</author>
+      <title>Splish Splash</title>
+      <genre>Romance</genre>
+      <price>4.95</price>
+      <publish_date>2000-11-02</publish_date>
+      <description>A deep sea diver finds true love twenty 
+      thousand leagues beneath the sea.</description>
+   </book>
+   <book id="bk108">
+      <author>Knorr, Stefan</author>
+      <title>Creepy Crawlies</title>
+      <genre>Horror</genre>
+      <price>4.95</price>
+      <publish_date>2000-12-06</publish_date>
+      <description>An anthology of horror stories about roaches,
+      centipedes, scorpions  and other insects.</description>
+   </book>
+   <book id="bk109">
+      <author>Kress, Peter</author>
+      <title>Paradox Lost</title>
+      <genre>Science Fiction</genre>
+      <price>6.95</price>
+      <publish_date>2000-11-02</publish_date>
+      <description>After an inadvertant trip through a Heisenberg
+      Uncertainty Device, James Salway discovers the problems 
+      of being quantum.</description>
+   </book>
+   <book id="bk110">
+      <author>O'Brien, Tim</author>
+      <title>Microsoft .NET: The Programming Bible</title>
+      <genre>Computer</genre>
+      <price>36.95</price>
+      <publish_date>2000-12-09</publish_date>
+      <description>Microsoft's .NET initiative is explored in 
+      detail in this deep programmer's reference.</description>
+   </book>
+   <book id="bk111">
+      <author>O'Brien, Tim</author>
+      <title>MSXML3: A Comprehensive Guide</title>
+      <genre>Computer</genre>
+      <price>36.95</price>
+      <publish_date>2000-12-01</publish_date>
+      <description>The Microsoft MSXML3 parser is covered in 
+      detail, with attention to XML DOM interfaces, XSLT processing, 
+      SAX and more.</description>
+   </book>
+   <book id="bk112">
+      <author>Galos, Mike</author>
+      <title>Visual Studio 7: A Comprehensive Guide</title>
+      <genre>Computer</genre>
+      <price>49.95</price>
+      <publish_date>2001-04-16</publish_date>
+      <description>Microsoft Visual Studio 7 is explored in depth,
+      looking at how Visual Basic, Visual C++, C#, and ASP+ are 
+      integrated into a comprehensive development 
+      environment.</description>
+   </book>
+</catalog>
+----
+
+And suppose our application includes the following entities:
+
+.Minimal source code for a `Book` entity.
+[source,java]
+----
+public class Book extends Entity {
+    public static final EntityType TYPE = new EntityTypeBuilder()
+        .string(Thing.identifier)
+        .string(Thing.name)
+        .string(Thing.description)
+        .build();
+    {
+        setEntityType(TYPE);
+    }
+}
+----
+
+.Minimal source code for a `Books` entity. I find it helps for API clarity to create subclasses entity-specific collection types rather than just using generic EntityLists.  This makes it easier for things like the `ResultParser` to introspect the data model and produce better results.
+[source,java]
+----
+public class Books extends EntityList<Book> {}
+----
+
+.Minimal source code for a `Catalog` entity.
+[source,java]
+----
+public class Catalog extends Entity {
+    public static final Tag BOOKS = new Tag("Books");
+    public static final EntityType TYPE = new EntityTypeBuilder()
+        .list(Books.class, BOOKS)
+        .build();
+    {
+        setEntityType(TYPE);
+    }
+
+}
+----
+
+We can convert this XML document into our entities using:
+
+.Using `ResultParser` to parse an XML document into Entities and EntityTypes.
+[source,java]
+----
+
+ResultParser parser = new ResultParser(Catalog.TYPE) <1>
+    .property("./book", Catalog.BOOKS) <2>
+    .entity(Book.TYPE) <3>
+    .property("@id", Thing.identifier) <4>
+    .property("title", Thing.name) <5>
+    .property("description", Thing.description); <6>
+
+Catalog catalog = (Catalog)parser.parseXML(xmlContent); <7>
+for (Book book : (Books)catalog.get(Catalog.BOOKS)) {
+    System.out.println("Name: " + book.get(Thing.name));
+}
+
+----
+<1> Constructor takes the `Catalog.TYPE` entity type, which is the assigned entity type for the `Catalog` class, thus ensuring that this result parser will map the "root" tag of an XML document to a `Catalog` entity.
+<2> "./book" is an expression language selector matching `<book>` elements that are direct children of the "current" element.  `Catalog.BOOKS` indicates that the `<book>` elements should be mapped to the `Catalog.BOOKS` property of the `Catalog` entity.
+<3> `entity(Book.TYPE)`, create a new `ResultParser` for mapping the `Book` entity.   This `entity()` method creates the "sub" parser, registers it with the "root" Catalog parser, and returns itself so that subsequent chained method calls are actually performed on the "Book" parser.
+<4> Map the "id" attribute of the `<book>` tag to the `Thing.identifier` property of the `Book` entity.
+<5> Map the contents of the `<title>` child tag to the `Thing.name` property of the `Book` entity.
+<6> Map the contents of the `<description>` child tag to the `Thing.description` property of the `Book` entity.
+<7> `parser.parseXML(xmlContent)` parses the provided XML content as a `Catalog` object.
+
+
+This short example demonstrates how easy it is to parse arbitrary XML into Java entities without dictating any structural requirements on the XML data.  The `ResultParser` uses the Result expression language to specify how the XML data should be mapped to entities. This example, being chosen for clarity and small code-size primarily maps to entities that have the same structure as the XML data, but API is flexible enough to map different structures together.  It also includes advanced facilities for custom content parsing and formatting.  For example, you can provide a `DateFormatter` object to help format dates and time data.
+
+
+[#json-to-entity]
+=== JSON to Entity
+
+Lest you think that the ResultParser is geared to XML data input exclusively, here is a motivating example the demonstrates the parsing of JSON data into entities.
+
+[source,json]
+----
+{
+  "colors": [
+    {
+      "color": "black",
+      "category": "hue",
+      "type": "primary",
+      "code": {
+        "rgba": [255,255,255,1],
+        "hex": "#000"
+      }
+    },
+    {
+      "color": "white",
+      "category": "value",
+      "code": {
+        "rgba": [0,0,0,1],
+        "hex": "#FFF"
+      }
+    },
+    {
+      "color": "red",
+      "category": "hue",
+      "type": "primary",
+      "code": {
+        "rgba": [255,0,0,1],
+        "hex": "#FF0"
+      }
+    },
+    {
+      "color": "blue",
+      "category": "hue",
+      "type": "primary",
+      "code": {
+        "rgba": [0,0,255,1],
+        "hex": "#00F"
+      }
+    },
+    {
+      "color": "yellow",
+      "category": "hue",
+      "type": "primary",
+      "code": {
+        "rgba": [255,255,0,1],
+        "hex": "#FF0"
+      }
+    },
+    {
+      "color": "green",
+      "category": "hue",
+      "type": "secondary",
+      "code": {
+        "rgba": [0,255,0,1],
+        "hex": "#0F0"
+      }
+    },
+  ]
+}
+----
+
+
+.The `Color` entity which will encapsulate a "row" of data in the JSON.
+[source,java]
+----
+/**
+ * Class to encapsulate a color.
+ */
+class Color extends Entity {
+    
+    /**
+     * Define some tags which we'll use for properties 
+     * in our class.
+     */
+    public static final Tag type = new Tag("type"),
+        red = new Tag("red"), 
+        green = new Tag("green"), 
+        blue = new Tag("blue"), 
+        alpha = new Tag("alpha");
+    
+    /**
+     * Define the entity type.
+     */
+    public static final EntityType TYPE = entityTypeBuilder(Color.class)
+        .string(Thing.name)
+        .string(Product.category)
+        .string(type)
+        .Integer(red)
+        .Integer(green)
+        .Integer(blue)
+        .Integer(alpha)
+        .build();
+}
+----
+
+.The `Colors` entity, which encapsulates a list of colors.
+[source,java]
+----
+
+/**
+ * Encapsulates a list of colors.
+ */
+class Colors extends EntityList<Color>{
+    static {
+        // Register this EntityType
+        EntityType.registerList(
+            Colors.class, // Class used for list
+            Color.class  // Class of row type
+        );
+    }
+}
+----
+
+.The `ColorSet` entity which will encapsulate the "root" of the data.  This is largely created to make it easier to map the JSON data onto our entities.
+[source,java]
+----
+
+/**
+ * An entity type to model the root of the data set.  
+ */
+class ColorSet extends Entity {
+    public static final Tag colors = new Tag("colors");
+    public static final EntityType TYPE = entityTypeBuilder(ColorSet.class)
+        .list(Colors.class, colors)
+        .factory(cls -> {return new ColorSet();})
+        .build();
+
+}
+----
+
+With all of the entity definitions out of the way, let's finally parse the JSON into entities:
+
+[source,java]
+----
+ResultParser parser = resultParser(ColorSet.class)
+        .property("colors", colors)
+        .entityType(Color.class)
+        .string("color", Thing.name)
+        .string("category", Product.category)
+        .string("type", type)
+        .Integer("code/rgba[0]", red)
+        .Integer("code/rgba[1]", green)
+        .Integer("code/rgba[2]", blue)
+        .Integer("code/rgba[3]", alpha)
+        ;
+
+ColorSet colorSet = (ColorSet)parser.parseJSON(jsonData, new ColorSet());
+----
+
+This looks very similar to the XML parsing example, but there are some notable differences.  One key difference is how "attributes" are addressed in JSON vs XML.  For XML, attributes are prefixed with "@" in the expression language, whereas they are not for JSON.  E.g. For the tag `<person name="Ted"/>` we would reference the name using "@name", whereas for the JSON object `{"name" : "Ted"}`, we would reference the name using "name".
+
+This example is intended to provide a glimpse of how you would use CodeRAD's XML and JSON parsing facilities in a real app.  I'll go over the details such as the expression language and APIs in subsequent sections.
+
+=== A Bird's-eye View
+
+Codename One's data parsing APIs can be grouped in the following three categories, listed in increasing order by level of abstraction:
+
+1. *Low-level parsers* - E.g. `XMLParser` and `JSONParser` which parse String data into generic data structures like `Element`, `Map`, `List`, etc..
+2. *Query and Selection* - E.g. `Result` and `ElementSelector` which provide a way to access data in an XML or JSON data set using simple expression languages resembling XPath and CSS selectors.
+3. *Entity Mapping* - E.g. `ResultParser` which provides a way to convert JSON and XML data directly into Entity objects.
+
+For low-level parsing, CodeRAD uses the core `XMLParser` and `JSONParser` classes.  
+
+For query and selection, CodeRAD provides its own APIs.  The `Result` class and its XPath-like expression language are used internally by the `ResultParser` class for mapping JSON/XML into entities, but you can also use it directly query XML and JSON data directly.
+
+The `ElementSelector` class provides an alternate syntax, resembling CSS selectors, for querying data in an XML data set.  It is currently XML-only, and it leverages XML-specific characteristics to provide a fluid experience.  This API is modeled after the `ComponentSelector` class, which, itself, is inspired by the popular *jQuery* javascript library.
+
+
+=== Parsing XML and JSON
+
+Low-level XML and JSON parsing can be performed using the core https://www.codenameone.com/javadoc/com/codename1/xml/XMLParser.html[XMLParser] and https://www.codenameone.com/javadoc/com/codename1/io/JSONParser.html[JSONParser] classes respectively.  For information on using these classes, refer to their javdoc pages.
+
+
+
+
+=== Querying XML and JSON Data Using `Result`
+
+The https://shannah.github.io/CodeRAD/javadoc/com/codename1/rad/processing/Result.html[Result] class provides a powerful expression language for accessing content from an XML document or JSON dataset. You can create a `Result` object to wrap a data set using the `Result.fromContent(...)` methods which accepts content either as XML/JSON strings, streams, or readers.  You will also accept pre-parsed data in the form of an `Element` object (for XML data), or `Map` object (for JSON data).
+
+The following is a simple usage example:
+
+.Sample code pulled from the CodeRAD unit tests demonstrating the use of Result to query XML data.
+[source,java]
+----
+String xml = "<?xml version='1.0'?>\n"
+                + "<person name=\"Paul\" email=\"paul@example.com\" dob=\"December 27, 1978\">"
+                + "  <children>\n"
+                + "    <person name=\"Jim\" email=\"jim@example.com\" dob=\"January 10, 1979\"/>\n"
+                + "    <person name=\"Jill\" email=\"jill@example.com\" dob=\"January 11, 1979\"/>\n"
+                + "  </children>\n"
+                + "</person>";
+                
+Result r = Result.fromContent(xml, Result.XML);
+
+r.get("/person/@name"); // "Paul"
+r.getAsString("./@name"); // "Paul"
+r.getAsString("@name"); // "Paul"
+r.get("/person[0]/@name"); // "Paul"
+r.get("./children/person[0]/@name"); // "Jim"
+r.getAsString("./children/person/@name"); // "Jim"
+r.getAsString("./children[0]/person/@name"); // "Jim"
+r.getAsStringArray("./children/person/@name").length; // 2
+r.get("/person/children/person[0]/@name"); // "Jim"
+r.getAsString("/person[0]/children/person/@name"); "Jim"
+r.getAsString("children[0]/person/@name"); // Jim
+r.getAsStringArray("children/person/@name").length; // 2
+----
+
+In the above example, we parse an XML string directly using `Result`. The various `get(...)`, `getAsString(...)`, and `getAsStringArray(...)` method give you a flavour for the expression language.  This example retrieved all data in `String` format, but the API includes methods for retrieving data for all of the types supported by JSON.  Specifically:
+
+. `getAsBoolean(expr)`
+. `getAsBooleanArray(expr)`
+. `getAsDouble(expr)`
+. `getAsDoubleArray(expr)`
+. `getAsInteger(expr)`
+. `getAsIntegerArray(expr)`
+. `getAsLong(expr)`
+. `getAsLongArray(expr)`
+
+Working with JSON is very similar, but there are some differences, which are related to the inherent differences between JSON data and XML data.
+
+Let's look at an equivalent example, this time using JSON as the source format:
+
+[source,java]
+----
+String json = "{\"name\":\"Paul\", \"email\":\"paul@example.com\", \"dob\":\"December 27, 1978\" "
+        + ", \"children\": [{\"name\":\"Jim\", \"email\":\"jim@example.com\", \"dob\":\"January 10, 1979\"},"
+        + "{\"name\"=\"Jill\", \"email\"=\"jill@example.com\", \"dob\":\"January 11, 1979\"}]}";
+
+
+Result r = Result.fromContent(json, Result.JSON);
+
+r.get("name"); // "Paul"
+r.getAsString("name"); // "Paul"
+r.get("name"); // "Paul"
+r.get("./children[0]/name"); // "Jim"
+r.get("children[0]/name"); // "Jim"
+r.get("./children/person[0]/name"); // null
+r.getAsString("./children/person/name"); // null
+r.getAsString("./children[0]/name"); // "Jim"
+r.getAsStringArray("./children/name").length; // 2
+r.getAsStringArray("./children/name"); // String[]{"Jim", "Jill"}
+r.get("./children/name"); // "Jim"
+r.getAsString("children/person/name");  // null
+r.getAsString("children[0]/person/name"); // null
+r.getAsStringArray("children/person/name").length; // 0
+        
+----
+
+Even though this JSON data is roughly equivalent to the XML data in the above example, we see that some of the expressions we use will differ.  In XML the XML tag is generally used as part of the expression language query.  In JSON there are no "tags", only Map properties and array indices.  Also, XML uses the "@" prefix for addressing attributes to distinguish them from child tags.
+
+E.g. Given the following XML tag:
+
+[source,xml]
+----
+<root name="John">
+    <name>Jack</name>
+</root>
+----
+
+We would have the following:
+
+[source,java]
+----
+Result r = Result.fromContent(xmlString, Result.XML);
+r.get("name"); // "Jack"
+r.get("@name"); // "John"
+----
+
+==== The Expression Language
+
+The expression language used by `Result` is very similar to XPath.  E.g.
+
+. `/` is a path separator.
+. `//` is a "glob" path separator.
+. `@attributeName` Refers to an attribute named "attributeName".
+. `[..]` Is used for array indices, and attribute filters.
+. `.` Refers to the current element
+. `..` Refers to the parent element
+
+See the https://shannah.github.io/CodeRAD/javadoc/com/codename1/rad/processing/Result.html[Result javadocs] for more details documentation on the expression language an API.
+
+=== `ResultParser` - From XML/JSON to Entities
+
+The https://shannah.github.io/CodeRAD/javadoc/com/codename1/rad/io/ResultParser.html[ResultParser] class uses the Result expression language to map XML and JSON data into Entities. 
+
+See the https://shannah.github.io/CodeRAD/javadoc/com/codename1/rad/io/ResultParser.html[ResultParser javadocs] for usage examples.
+
+=== Asynchronous Parsing
+
+In Codename One, most things are done on the EDT.  The main app lifecycle methods (`start()`, `stop()`, etc..) are run on the EDT, as are all event handlers.  Any code that mutates the UI hierarchy *must* be run on the EDT, so we often just stay on the EDT to make things simpler.  No thread race conditions, etc..  Some things, however, would be better done in a background thread so that they don't interfer with the app's UI performance.  Data parsing, especially when parsing large amounts of data, is one of those tasks that can potentially get in the way of a smooth user experience.  This is for two reasons:
+
+. Parsing large amounts of data is processor intensive and can get in the way of the app's ability to *"draw" itself at 60fps.*
+. Parsing large amounts of data may involve a the creation of lots of short-lived objects (usually strings), which **cause the garbage collector to churn**.  On iOS, in particular, and likely on other platforms, to varying extents, the garbage collector will only "stop the world", in extreme circumstances, where memory is at a critical level, but it *may* need to stop individual threads temporarily that are producing large amounts of "garbage" while it catches up with the backlog.  It is better for everyone involved if excess garbage related to data parsing happens on a thread *other than* the EDT, so that the garbage collector isn't faced with the sophie's choice of whether to "lock" the EDT, or risk running out of memory.
+
+The https://shannah.github.io/CodeRAD/javadoc/com/codename1/rad/io/ParsingService.html[ParsingService] class makes it easier to parse data off the EDT.
+
+A simple example:
+
+.Adapting the example from <<json-to-entity>> to perform asynchronouze parsing off the EDT
+[source,java]
+----
+ParsingService parserService = new ParsingService();
+
+parserService.parseJSON(jsonData, parser, new ColorSet()).ready(colorSet -> {
+    // Callback passed the resulting colorSet object
+    // once parsing is complete
+});
+----
+
+IMPORTANT: Each `ParsingService` instance creates and wraps a Thread which is used to perform the parsing.  When you are finished using a particular `ParsingService` instance, you should call its `stop()` method to stop the thread.
+
+Refer to the https://shannah.github.io/CodeRAD/javadoc/com/codename1/rad/io/ParsingService.html[ParsingService javadocs] for more examples and details about the API.
+

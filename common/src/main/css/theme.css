@@ -1,0 +1,15 @@
+/* CSS file for filechooser */
+
+PopupMenu {
+    cn1-derive: PopupDialog;
+}
+
+PopupMenuContent {
+    cn1-derive: PopupContentPane;
+}
+
+AccountAvatarsTitleComponentText {
+    font-family: 'native:MainLight';
+    font-size: 0.4rem;
+    color: #666666;
+}
