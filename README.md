@@ -223,7 +223,7 @@ Módulo de bindings y entidades.
 # 📂 Estructura del proyecto
 
 ```bash
-CodeRAD/
+Toolkit-moderno-de-desarrollo/
 │
 ├── common/
 ├── coderad-annotations/
@@ -301,7 +301,7 @@ Developer → Declarative UI → Components → MVC → Mobile App
 ## 1️⃣ Clonar repositorio
 
 ```bash
-git clone https://github.com/shannah/CodeRAD
+git clone https://github.com/isairey/Toolkit-moderno-de-desarrollo
 ```
 
 ---
@@ -309,7 +309,7 @@ git clone https://github.com/shannah/CodeRAD
 ## 2️⃣ Entrar al proyecto
 
 ```bash
-cd CodeRAD
+cd Toolkit-moderno-de-desarrollo
 ```
 
 ---
@@ -442,11 +442,11 @@ git push origin feature/nueva-funcionalidad
 
 ---
 
-# 👨‍💻 Créditos
+# 👨‍💻 Desarrollador
 
 <div align="center">
 
-## Steve Hannah — Codename One Developer
+## Isai Reyes — Codename One Developer
 
 Framework desarrollado para acelerar la creación de aplicaciones modernas utilizando Codename One 🚀
 
